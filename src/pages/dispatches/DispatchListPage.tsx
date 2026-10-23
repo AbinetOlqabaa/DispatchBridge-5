@@ -329,18 +329,18 @@ export const DispatchListPage: React.FC<DispatchListPageProps> = ({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+          <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
             <table className="w-full text-left text-xs min-w-[860px]">
               <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
                 <tr>
-                  <th className="px-3.5 py-3 font-semibold">{t('table.dispatch_number')}</th>
-                  <th className="px-3.5 py-3 font-semibold">{t('table.sender_supplier')}</th>
-                  <th className="px-3.5 py-3 font-semibold">{t('table.destination_partner')}</th>
-                  <th className="px-3.5 py-3 font-semibold">{t('table.status')}</th>
-                  <th className="px-3.5 py-3 font-semibold">{t('table.view_tracking')}</th>
-                  <th className="px-3.5 py-3 font-semibold">{t('table.quantity_loss')}</th>
-                  <th className="px-3.5 py-3 font-semibold text-right">{t('table.share_link')}</th>
-                  <th className="px-3.5 py-3 font-semibold text-right">{t('table.action')}</th>
+                  <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.dispatch_number')}</th>
+                  <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.sender_supplier')}</th>
+                  <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.destination_partner')}</th>
+                  <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.status')}</th>
+                  <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.view_tracking')}</th>
+                  <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.quantity_loss')}</th>
+                  <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">{t('table.share_link')}</th>
+                  <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">{t('table.action')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">

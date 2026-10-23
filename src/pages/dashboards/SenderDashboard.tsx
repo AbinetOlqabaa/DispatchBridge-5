@@ -149,17 +149,17 @@ export const SenderDashboard: React.FC<SenderDashboardProps> = ({
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+        <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
           <table className="w-full text-left text-xs min-w-[760px]">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="px-3.5 py-3 font-semibold">Dispatch Number</th>
-                <th className="px-3.5 py-3 font-semibold">Partner Destination</th>
-                <th className="px-3.5 py-3 font-semibold">Status</th>
-                <th className="px-3.5 py-3 font-semibold">Partner Viewed Status</th>
-                <th className="px-3.5 py-3 font-semibold">Driver & Cargo</th>
-                <th className="px-3.5 py-3 font-semibold text-right">Share / Link</th>
-                <th className="px-3.5 py-3 font-semibold text-right">Detail</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Dispatch Number</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Partner Destination</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Status</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Partner Viewed Status</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Driver & Cargo</th>
+                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Share / Link</th>
+                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Detail</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">

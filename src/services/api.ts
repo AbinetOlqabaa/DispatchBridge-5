@@ -296,6 +296,34 @@ class ApiService {
     });
   }
 
+  async recordPublicReceipt(
+    shareToken: string,
+    payload: {
+      lines: Array<{
+        id: string;
+        quantityReceived: number;
+        condition: string;
+        discrepancyType?: string;
+        notes?: string;
+        evidence?: any[];
+      }>;
+      signoff: {
+        signerName: string;
+        signerRole: string;
+        comments?: string;
+        signatureSvgOrBase64?: string;
+      };
+      idempotencyKey?: string;
+    }
+  ): Promise<Dispatch> {
+    const key = payload.idempotencyKey || `idem_pub_rcpt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    return this.request(`/api/dispatches/public/${shareToken}/reconcile`, {
+      method: 'POST',
+      headers: { 'X-Idempotency-Key': key },
+      body: JSON.stringify({ ...payload, idempotencyKey: key }),
+    });
+  }
+
   async respondToDiscrepancy(
     dispatchId: string,
     caseId: string,

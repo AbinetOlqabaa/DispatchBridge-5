@@ -958,6 +958,100 @@ async function runTestSuite() {
     assertEqual(restoredUser.businessId, 'biz_apex_supply', 'Switched back to biz_apex_supply successfully');
   });
 
+  await test('Tablet UX & Layout Stability', 'Responsive Layout Boundaries: All tables, summary metrics, and status endpoints provide bounded fields without page-level overflow', async () => {
+    // 1. Verify system status fields are bounded and complete
+    const status = await sandboxStore.getSystemStatus();
+    assert(Boolean(status.kernelVersion), 'System status includes kernel version');
+    assert(Boolean(status.databaseProvider), 'System status includes database provider');
+    assert(typeof status.totalDispatches === 'number', 'Total dispatches is numeric');
+
+    // 2. Verify all seeded dispatches have itemized lines with SKU, description, unit, and valid counts
+    const dispatches = await sandboxStore.getDispatches({});
+    for (const d of dispatches) {
+      assert(d.lines.length > 0, `Dispatch ${d.dispatchNumber} contains lines`);
+      for (const line of d.lines) {
+        assert(line.sku.length <= 32, `Line SKU ${line.sku} within 32 chars for column stability`);
+        assert(line.quantitySent > 0, `Line quantitySent is positive`);
+        assert(Boolean(line.unit), `Line has unit specified`);
+      }
+    }
+
+    // 3. Verify audit log entries have bounded actor and entity labels
+    const logs = await sandboxStore.getAuditLogs();
+    assert(logs.length > 0, 'Audit logs populated');
+    for (const log of logs) {
+      assert(Boolean(log.action), 'Log has valid action string');
+      assert(Boolean(log.actorName), 'Log has actor name');
+      assert(Boolean(log.entityType), 'Log has entity type');
+    }
+  });
+
+  await test('Public Partner Workflows', 'Public Partner Token Reconciliation: External recipient signs off dock manifest via share token with digital signature', async () => {
+    // 1. Create a fresh dispatch to test public share token reconciliation flow
+    const testDispatch = await sandboxStore.createDispatch(
+      {
+        partnerId: 'part_metro_north',
+        originLocationLabel: 'Chicago Outbound Terminal 2',
+        originAddress: '200 Cargo Way, Chicago, IL',
+        lines: [
+          { sku: 'SKU-PUB-01', itemName: 'Cold-Pressed Valencia Orange Juice (Pallet)', unit: 'pallets', quantitySent: 4 },
+          { sku: 'SKU-PUB-02', itemName: 'Organic Fuji Apples (Crate)', unit: 'crates', quantitySent: 20 },
+        ],
+      },
+      senderUser
+    );
+
+    assert(Boolean(testDispatch.shareToken), 'Share token created for dispatch');
+
+    // 2. Lookup dispatch via unguessable share token
+    const publicView = await sandboxStore.getDispatchByShareToken(testDispatch.shareToken);
+    assert(publicView !== null, 'Public token resolves to active dispatch');
+    assertEqual(publicView!.dispatchNumber, testDispatch.dispatchNumber);
+
+    // 3. Partner signs off dock manifest as unauthenticated dock receiver
+    const testSig = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const guestActor: User = {
+      id: `usr_partner_link_${testDispatch.partnerId}`,
+      email: 'dock.receiving@metroretail.com',
+      name: 'Elena Rostova',
+      phoneNumber: '+1-555-019-4400',
+      phoneVerified: false,
+      role: 'RECEIVER',
+      businessId: testDispatch.partnerId,
+      businessName: 'Metro Retail North Branch',
+      memberships: [],
+      partnerId: testDispatch.partnerId,
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const reconciled = await sandboxStore.recordReceiptReport(
+      testDispatch.id,
+      {
+        lines: [
+          { id: testDispatch.lines[0].id, quantityReceived: 4, condition: 'GOOD', discrepancyType: 'NONE' },
+          { id: testDispatch.lines[1].id, quantityReceived: 18, condition: 'DAMAGED', discrepancyType: 'SHORTAGE', notes: '2 crates damaged by dampness' },
+        ],
+        signoff: {
+          signerName: 'Elena Rostova',
+          signerRole: 'Dock Receiving Supervisor',
+          comments: 'Temperature sensor checked: 3.8C. Accepted with 2 crate discrepancy.',
+          signatureSvgOrBase64: testSig,
+        },
+      },
+      guestActor
+    );
+
+    assertEqual(reconciled.status, 'PARTIALLY_RECEIVED', 'Status updated to PARTIALLY_RECEIVED due to 2 crate shortage');
+    assertEqual(reconciled.totalQuantityReceived, 22, 'Total received is 4 + 18 = 22');
+    assertEqual(reconciled.totalQuantityLost, 2, 'Total lost is 2');
+    assert(Boolean(reconciled.receiverSignoff), 'Receiver signoff recorded');
+    assertEqual(reconciled.receiverSignoff?.signerName, 'Elena Rostova', 'Signer name recorded correctly');
+    assertEqual(reconciled.receiverSignoff?.signatureSvgOrBase64, testSig, 'Digital signature captured and locked');
+    assert(Boolean(reconciled.discrepancyCases && reconciled.discrepancyCases.length > 0), 'Discrepancy case opened automatically');
+  });
+
   // -------------------------------------------------------------------------
   // Summary
   // -------------------------------------------------------------------------

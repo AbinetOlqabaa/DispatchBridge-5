@@ -287,14 +287,14 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onNavi
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+        <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
           <table className="w-full text-left text-xs min-w-[760px]">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="px-3.5 py-3 font-semibold">Timestamp</th>
-                <th className="px-3.5 py-3 font-semibold">Actor / Entity</th>
-                <th className="px-3.5 py-3 font-semibold">Action</th>
-                <th className="px-3.5 py-3 font-semibold">Target Entity</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Timestamp</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Actor / Entity</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Action</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Target Entity</th>
                 <th className="px-3.5 py-3 font-semibold">Details & Integrity Trail</th>
               </tr>
             </thead>

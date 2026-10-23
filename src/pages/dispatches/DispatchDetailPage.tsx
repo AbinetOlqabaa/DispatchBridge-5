@@ -368,7 +368,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
         </div>
 
         {/* Origin & Destination Snapshots */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
           <div className="bg-slate-800/40 p-3.5 rounded-xl border border-slate-800">
             <div className="text-slate-400 mb-1 flex items-center gap-1.5 font-semibold">
               <Warehouse className="w-3.5 h-3.5 text-indigo-400" />
@@ -694,18 +694,18 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
           )}
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+        <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
           <table className="w-full text-left text-xs min-w-[780px]">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="px-3.5 py-3 font-semibold">SKU</th>
-                <th className="px-3.5 py-3 font-semibold">Item Description</th>
-                <th className="px-3.5 py-3 font-semibold text-right">Dispatched</th>
-                <th className="px-3.5 py-3 font-semibold text-right">Received</th>
-                <th className="px-3.5 py-3 font-semibold text-right">Shortfall</th>
-                <th className="px-3.5 py-3 font-semibold">Condition</th>
-                <th className="px-3.5 py-3 font-semibold">Discrepancy Category</th>
-                <th className="px-3.5 py-3 font-semibold">Notes</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">SKU</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Item Description</th>
+                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Dispatched</th>
+                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Received</th>
+                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Shortfall</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Condition</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Discrepancy Category</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono">

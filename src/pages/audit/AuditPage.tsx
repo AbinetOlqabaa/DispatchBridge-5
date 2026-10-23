@@ -208,14 +208,14 @@ export const AuditPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-800/80">
-          <table className="w-full text-left text-xs min-w-[760px]">
+        <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
+          <table className="w-full text-left text-xs min-w-[720px]">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="px-3.5 py-3 font-semibold">Event Timestamp</th>
-                <th className="px-3.5 py-3 font-semibold">Actor & Role</th>
-                <th className="px-3.5 py-3 font-semibold">Action</th>
-                <th className="px-3.5 py-3 font-semibold">Entity</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Event Timestamp</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Actor & Role</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Action</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Entity</th>
                 <th className="px-3.5 py-3 font-semibold">Audit Record Summary</th>
               </tr>
             </thead>

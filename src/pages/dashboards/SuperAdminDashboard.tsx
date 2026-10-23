@@ -139,7 +139,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onNavi
       </div>
 
       {/* System Highlights */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
           <div className="text-xs text-slate-400 mb-1">Total Audit Events</div>
           <div className="text-xl font-bold text-purple-400">{logs.length}</div>

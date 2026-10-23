@@ -153,4 +153,26 @@ router.post('/switch-business', authenticate, async (req: AuthenticatedRequest, 
   }
 });
 
+// Create New Business Entity & Membership
+router.post('/create-business', authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { name, registrationNumber, countryCode, contactEmail, contactPhone, address } = req.body;
+    if (!name || !contactEmail || !contactPhone || !address) {
+      res.status(400).json({ error: 'name, contactEmail, contactPhone, and address are required.' });
+      return;
+    }
+    const result = await sandboxStore.createBusiness(req.user!.id, {
+      name,
+      registrationNumber,
+      countryCode,
+      contactEmail,
+      contactPhone,
+      address,
+    });
+    res.status(201).json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to create business entity.' });
+  }
+});
+
 export default router;

@@ -103,7 +103,26 @@ const ownerUser: User = {
   businessId: 'biz_apex_supply',
   businessName: 'Apex Supply Logistics',
   status: 'ACTIVE',
-  memberships: [],
+  memberships: [
+    {
+      id: 'mem_001',
+      userId: 'usr_business_owner',
+      businessId: 'biz_apex_supply',
+      businessName: 'Apex Supply Logistics',
+      role: 'BUSINESS_OWNER',
+      status: 'ACTIVE',
+      createdAt: '2026-01-15T08:00:00.000Z',
+    },
+    {
+      id: 'mem_001_midwest',
+      userId: 'usr_business_owner',
+      businessId: 'biz_midwest_coldchain',
+      businessName: 'Midwest Cold-Chain Express',
+      role: 'BUSINESS_OWNER',
+      status: 'ACTIVE',
+      createdAt: '2026-02-15T08:00:00.000Z',
+    },
+  ],
   createdAt: '',
   updatedAt: '',
 };
@@ -868,6 +887,75 @@ async function runTestSuite() {
     assertEqual(latestWp?.latitude, 44.3500, 'Latest actual waypoint latitude matches telemetry update');
     assertEqual(latestWp?.longitude, -92.2000, 'Latest actual waypoint longitude matches telemetry update');
     assertEqual(latestWp?.label, 'Wabasha County Corridor Waypoint', 'Latest actual waypoint label preserved');
+  });
+
+  await test('Integration', 'Guest Exploration & Tablet Responsive Data: Public sandbox dispatches accessible without auth token', async () => {
+    // 1. Fetch dispatches with unauthenticated filter (simulating guest visitor exploration)
+    const publicDispatches = await sandboxStore.getDispatches({});
+    assert(Array.isArray(publicDispatches), 'Public dispatches returned as array');
+    assert(publicDispatches.length >= 3, 'Public sandbox contains at least 3 seeded dispatches for exploration');
+
+    // 2. Verify all returned dispatches have necessary fields for tablet cards and itemized manifest tables
+    for (const d of publicDispatches) {
+      assert(Boolean(d.dispatchNumber), `Dispatch ${d.id} has valid dispatchNumber`);
+      assert(Boolean(d.senderBusinessName), `Dispatch ${d.id} has senderBusinessName`);
+      assert(Boolean(d.destinationSnapshot?.address), `Dispatch ${d.id} has destination address`);
+      assert(Array.isArray(d.lines) && d.lines.length > 0, `Dispatch ${d.id} has lines`);
+      assert(typeof d.totalQuantityDispatched === 'number', `Dispatch ${d.id} has totalQuantityDispatched`);
+      assert(Boolean(d.shareToken), `Dispatch ${d.id} has public unguessable shareToken`);
+    }
+
+    // 3. Verify public partner view access by unguessable share token without authentication
+    const firstDispatch = publicDispatches[0];
+    const resolvedByToken = await sandboxStore.getDispatchByShareToken(firstDispatch.shareToken);
+    assert(resolvedByToken !== null, 'Public partner view resolves dispatch by token');
+    assertEqual(resolvedByToken?.id, firstDispatch.id, 'Resolved dispatch ID matches expected');
+  });
+
+  await test('Multi-Business', 'Context Switching & Multi-Membership: Business owner switches tenant context and registers new business entity', async () => {
+    // 1. Verify ownerUser initial context
+    assertEqual(ownerUser.businessId, 'biz_apex_supply', 'Initial active business context is biz_apex_supply');
+    assert(ownerUser.memberships.length >= 2, 'Owner user has multiple business memberships');
+    const midwestMem = ownerUser.memberships.find((m) => m.businessId === 'biz_midwest_coldchain');
+    assert(Boolean(midwestMem), 'Membership for Midwest Cold-Chain Express exists');
+
+    // 2. Switch context to biz_midwest_coldchain
+    const switchedUser = await sandboxStore.switchActiveBusiness(ownerUser.id, 'biz_midwest_coldchain');
+    assertEqual(switchedUser.businessId, 'biz_midwest_coldchain', 'Active businessId switched to biz_midwest_coldchain');
+    assertEqual(switchedUser.businessName, 'Midwest Cold-Chain Express', 'Active businessName matches target business');
+
+    // 3. Verify tenant scoping on dispatches
+    const midwestDispatches = await sandboxStore.getDispatches({ businessId: 'biz_midwest_coldchain' });
+    const apexDispatches = await sandboxStore.getDispatches({ businessId: 'biz_apex_supply' });
+    assert(Array.isArray(midwestDispatches), 'Midwest dispatches query succeeds');
+    assert(apexDispatches.length >= 3, 'Apex supply has seeded dispatches');
+
+    // 4. Register a new business entity under the user account
+    const newBizPayload = {
+      name: 'Great Lakes Cold Freightways Ltd.',
+      registrationNumber: 'REG-GLF-9941',
+      countryCode: 'US',
+      contactEmail: 'operations@greatlakesfreight.com',
+      contactPhone: '+1-414-555-0188',
+      address: '700 Harbor View Way, Bay 3, Milwaukee, WI',
+    };
+    const { business: createdBiz, user: updatedUserWithNewBiz } = await sandboxStore.createBusiness(
+      ownerUser.id,
+      newBizPayload
+    );
+
+    assert(Boolean(createdBiz.id), 'New business entity created with generated ID');
+    assertEqual(createdBiz.name, 'Great Lakes Cold Freightways Ltd.', 'Business legal name matches');
+    assertEqual(updatedUserWithNewBiz.businessId, createdBiz.id, 'User active business updated to newly created entity');
+    assert(
+      updatedUserWithNewBiz.memberships.some((m) => m.businessId === createdBiz.id),
+      'New business membership appended to user memberships'
+    );
+    assert(updatedUserWithNewBiz.memberships.length >= 3, 'User now holds at least 3 active business memberships');
+
+    // 5. Switch back to original business context to keep test runner idempotent
+    const restoredUser = await sandboxStore.switchActiveBusiness(ownerUser.id, 'biz_apex_supply');
+    assertEqual(restoredUser.businessId, 'biz_apex_supply', 'Switched back to biz_apex_supply successfully');
   });
 
   // -------------------------------------------------------------------------

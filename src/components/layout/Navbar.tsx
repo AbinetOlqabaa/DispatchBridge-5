@@ -133,8 +133,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* Desktop & Tablet Landscape Nav Items */}
-          <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 overflow-x-auto scrollbar-none py-1 flex-1 justify-center max-w-2xl px-2">
+          {/* Desktop Nav Items (xl: >= 1280px) */}
+          <div className="hidden xl:flex items-center gap-1.5 py-1 flex-1 justify-center max-w-2xl px-2">
             {navItems.filter((i) => i.show).map((item) => {
               const Icon = item.icon;
               const isActive = currentTab === item.id;
@@ -142,17 +142,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => onSelectTab(item.id)}
-                  className={`flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
                     isActive
                       ? 'bg-slate-800 text-white shadow-sm border border-slate-700 font-semibold'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden xl:inline">{item.label}</span>
-                  <span className="inline xl:hidden">
-                    {item.id === 'locations' ? 'Origins' : item.id === 'recommendations' ? 'Recs' : item.id === 'status' ? 'Status' : item.id === 'audit' ? 'Audit' : item.label}
-                  </span>
+                  <span>{item.label}</span>
                 </button>
               );
             })}
@@ -430,8 +427,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Tablet Portrait Navigation Strip (First-class tablet portrait UX: 768px - 1023px) */}
-      <div className="hidden md:flex lg:hidden border-t border-slate-800/80 bg-slate-900/95 px-3 sm:px-6 py-1.5 items-center justify-between gap-1 overflow-x-auto scrollbar-none w-full shadow-inner">
+      {/* Tablet First-Class Navigation Strip (Covers Tablet Portrait & Landscape: 768px - 1279px) */}
+      <div className="hidden md:flex xl:hidden border-t border-slate-800/80 bg-slate-900/95 px-3 sm:px-6 py-2 items-center justify-between gap-1 overflow-x-auto scrollbar-none w-full shadow-inner">
         {navItems.filter((i) => i.show).map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;

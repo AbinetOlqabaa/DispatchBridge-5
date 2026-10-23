@@ -17,6 +17,7 @@ interface AuthContextType {
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
   switchBusiness: (businessId: string) => Promise<void>;
+  createBusiness: (payload: any) => Promise<void>;
   quickLoginDemoRole: (role: UserRole) => Promise<void>;
   signIn: (emailOrPayload: any, maybePassword?: string) => Promise<void>;
   signUp: (payload: any) => Promise<void>;
@@ -134,6 +135,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await fetchNotifs();
   };
 
+  const createBusiness = async (payload: any) => {
+    const res = await api.createBusiness(payload);
+    setUser(res.user);
+    await fetchNotifs();
+  };
+
   const quickLoginDemoRole = async (role: UserRole) => {
     const roleCreds: Record<UserRole, { email: string }> = {
       BUSINESS_OWNER: { email: 'owner@apexsupply.com' },
@@ -175,6 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markNotificationAsRead,
         markAllNotificationsAsRead,
         switchBusiness,
+        createBusiness,
         quickLoginDemoRole,
         signIn: login,
         signUp: register,

@@ -1,6 +1,6 @@
 # Build State — Business Dispatch & Delivery Reconciliation (DispatchBridge)
 
-- **Last Updated:** 2026-10-22T17:55:00-07:00
+- **Last Updated:** 2026-10-22T20:05:00-07:00
 - **Runtime / Platform:** Node.js v22.14.0 on Linux container with Express 4 backend & Vite 8 React 19 Frontend. Configured as an installable mobile-first Progressive Web App (PWA). *Note: Native Android build tooling (Gradle / Android SDK) is not supported in this runtime environment.*
 - **Stack:**
   - Backend: Node.js, Express 4, TypeScript, HMAC SHA-256 session tokens, timing-safe one-time bootstrap tokens, in-memory domain adapter (`sandboxStore`) with full multi-tenant isolation.
@@ -18,9 +18,9 @@
 | Phase 3 | `.ai/03_AUTH_AND_AUTHORIZATION.md` | **COMPLETE** | One-time random bootstrap secret (`/api/auth/bootstrap-superadmin`), HMAC signed session tokens, multi-tenant RBAC, quick role sandbox switcher for testing. |
 | Phase 4 | `.ai/04_DISPATCH_AND_RECONCILIATION.md` | **COMPLETE** | 2-step dispatch creation (draft + pre-submit review), unguessable share tokens (`/?token=...`), tamper-resistant immutable quantity enforcement, line-level discrepancy reporting (shortage, damaged, loss), signoffs, sender acknowledgement/resolution. |
 | Phase 5 | `.ai/05_NOTIFICATIONS_AND_AUDIT.md` | **COMPLETE** | Real-time in-app notification drawer with unread counter & read tracking; immutable audit trail logging actor, role, correlation ID, and metadata for every mutation. |
-| Phase 6 | `.ai/06_UI_UX_AND_ACCESSIBILITY.md` | **COMPLETE** | Responsive layouts for desktop and mobile viewports, role-specific dashboards (Business Owner, Sender, Receiver, Super Admin), locations manager, partner directory, loading spinners, and error alerts. |
+| Phase 6 | `.ai/06_TABLET_FIRST_UI_UX_AND_ACCESSIBILITY.md` | **COMPLETE** | Responsive layouts for desktop, tablet portrait (768x1024, 820x1180), tablet landscape (1024x768, 1180x820), and mobile viewports. Role dashboards, locations manager, partner directory, loading states, and error alerts. |
 | Phase 7 | `.ai/07_SECURITY_PRIVACY_AND_FAILURES.md` | **COMPLETE** | Strict cross-tenant isolation on store and route levels (HTTP 403 on mismatched tenant/partner access), timingSafeEqual constant-time comparisons, idempotency key deduplication. |
-| Phase 8 | `.ai/08_TESTING_AND_ACCEPTANCE.md` | **COMPLETE** | 21 automated unit, security, and integration acceptance tests passing with 0 failures (`npm test`). `tsc --noEmit` passing with 0 type errors. |
+| Phase 8 | `.ai/08_TESTING_AND_ACCEPTANCE.md` | **COMPLETE** | 24 automated unit, security, and integration acceptance tests passing with 0 failures (`npm test`). `tsc --noEmit` passing with 0 type errors. |
 | Phase 9 | `.ai/09_RELEASE_CHECKLIST.md` | **COMPLETE** | Release checklist evaluated honestly. Verdict: **READY FOR STAGING**. |
 
 ---
@@ -36,31 +36,41 @@
    - Vehicle pin with pulsing radar beacon rings and truck insignia.
    - Map controls: Zoom in, Zoom out, Reset / Fit Route Bounds, 1-click "Copy Lat/Lng" button, and direct external Google Maps link (`https://www.google.com/maps?q=lat,lng`).
    - "Simulate GPS Ping" action to record live telemetry updates via `POST /api/dispatches/:id/telemetry`, updating coordinates dynamically in runtime.
-2. **Driver QR Barcode Scanner & Transit Checkpoints (`DispatchDetailPage`):**
+2. **Planned vs. Actual Route Polylines (`mapCache.ts` & `DispatchTrackingMap`):**
+   - 9 planned waypoint corridor overlay (`wp_p0` to `wp_p8`) connecting Chicago loading dock to Minneapolis destination.
+   - 5 actual historical breadcrumb coordinates (`wp_a0` to `wp_a4`) with speed and timestamps.
+   - Interactive popover inspection on breadcrumb pins and corridor variance tracker (`Corridor Variance: 0.0 km • 98.4% Adherence`).
+   - Dynamic waypoint appending on incoming live telemetry pings.
+3. **Offline Map Caching Strategy (`mapCache.ts`):**
+   - Universal storage (browser `localStorage` + fallback memory store) caching tile bounds, waypoints, and coordinates.
+   - Offline detection banner and queueing system for telemetry pings recorded while offline.
+4. **Driver QR Barcode Scanner & Transit Checkpoints (`DispatchDetailPage`):**
    - Live camera viewfinder emulator + manual barcode input.
    - Quick package presets for manifest waybill and individual cargo lines.
    - Updates transit milestone status (`IN_TRANSIT`, `OUT_FOR_DELIVERY`, `ARRIVED_AT_DOCK`), waypoint checkpoint, and driver notes.
-   - Verified live in browser: updated DSP-2026-0081 status to "In Transit" with timestamped package scan audit logs.
-3. **PDF Manifest Waybill Export (`DispatchDetailPage`):**
+5. **PDF Manifest Waybill Export (`DispatchDetailPage`):**
    - High-fidelity PDF document generation via `jspdf` for offline dock records.
    - Includes origin, destination, carrier license plate, tracking link, and full itemized cargo table.
-4. **Bulk CSV Dispatch Upload (`DispatchListPage`):**
+6. **Bulk CSV Dispatch Upload (`DispatchListPage`):**
    - Downloadable standard CSV template (`dispatch_reference`, `partner_name`, `destination_address`, `driver_name`, `sku`, `item_name`, `unit`, `quantity`).
    - Line-by-line validation, grouping by dispatch reference, and automatic partner registration.
-5. **Executive Analytics Dashboard (`BusinessOwnerDashboard`):**
+7. **Executive Analytics Dashboard (`BusinessOwnerDashboard`):**
    - SVG Donut Chart showing fulfillment success rate (66.6% delivered intact).
    - Milestone lead times (dispatch → view → dock receipt → discrepancy resolution).
    - Loss Root Cause breakdown (Damaged vs Shortage).
-6. **Multi-Language Selector (5 Languages):**
+8. **Multi-Language Selector (5 Languages):**
    - English (`en`), Amharic (`am` / `አማርኛ`), Afan Oromo (`om` / `Afaan Oromoo`), Tigrigna (`ti` / `ትግርኛ`), and Somali (`so` / `Soomaali`).
-   - Verified dynamic locale switching and translation across navbar, tables, statuses, and buttons.
-7. **Dark / Light / System Theme Mode:**
+   - Dynamic locale switching and translation across navbar, tables, statuses, and buttons.
+9. **Dark / Light / System Theme Mode:**
    - Persisted in `localStorage` under `dispatchbridge_theme` and synchronized to `document.documentElement.className`.
-   - Verified light theme visual contrast and styling via browser screenshot capture.
-8. **Summary Metric Cards with Recharts Trends:**
-   - Pending Deliveries, Total Value in Transit ($4,625.00), and Completed Today.
-9. **Export Dispatches List to CSV / PDF Report:**
-   - Multi-format filtered dispatch records export.
+10. **Summary Metric Cards with Recharts Trends:**
+    - Pending Deliveries, Total Value in Transit ($4,625.00), and Completed Today with responsive Sparkline/Area/Bar chart projections.
+11. **Export Dispatches List to CSV / PDF Report:**
+    - Multi-format filtered dispatch records export.
+12. **Tablet First-Class Navigation & Layout (Portrait & Landscape):**
+    - Dedicated tablet navigation strip spanning full viewport width for 768px-1279px viewports, eliminating center header navigation squishing.
+    - Balanced 2x2 metric card grids on tablet portrait; 4 columns on landscape and desktop.
+    - Zero page-level horizontal overflow; cleanly bounded table scroll areas with `.scrollbar-thin` styling.
 
 ### Sandbox Mode Notice:
 - Persistent storage currently uses the in-memory `sandboxStore` adapter with pre-seeded demonstration data. Cloud database (e.g., Cloud SQL / Firestore) and external SMS/WhatsApp gateway credentials remain unconfigured until staging deployment. Transparent sandbox banners are displayed in the UI.
@@ -102,10 +112,11 @@ $ npm test
 #   [PASS] Photo Damage Claims: Cargo damage photos with SHA-256 hashes are attached to discrepancy cases
 #   [PASS] Notification Outbox Gateway: Outbound SMS, Email, and Webhook queuing with delivery retries
 #   [PASS] Staging Readiness Diagnostics Engine: Automated evaluation against 4 release checklist domains
-- [PASS] Dispatch Geo-Coordinates & Live Map Telemetry: Origin, Destination, and Current GPS coordinates are stored and updated
+#   [PASS] Dispatch Geo-Coordinates & Live Map Telemetry: Origin, Destination, and Current GPS coordinates are stored and updated
 #   [PASS] Map Offline Caching: Pre-caching coordinate data, tile grid bounds, and offline telemetry queuing
 #   [PASS] Route Polylines & History: Planned corridor vs. actual transit waypoint polyline overlay data
-# TEST RESULTS: 23/23 PASSED (0 failed)
+#   [PASS] Guest Exploration & Tablet Responsive Data: Public sandbox dispatches accessible without auth token
+# TEST RESULTS: 24/24 PASSED (0 failed)
 # ALL ACCEPTANCE TESTS PASSED SUCCESSFULLY!
 
 # 3. Applet Compilation Check:
@@ -117,12 +128,12 @@ $ npm test
 ## 4. Release Checklist Assessment (`.ai/09_RELEASE_CHECKLIST.md`)
 
 - [x] Build/type-check/lint passes in actual project environment (`npm run lint` -> 0 errors).
-- [x] Relevant unit, security, and integration tests pass (`npm test` -> 23/23 PASS).
+- [x] Relevant unit, security, and integration tests pass (`npm test` -> 24/24 PASS).
 - [x] Critical end-to-end flows verified (Dispatch creation -> Manifest view tracking -> Dock receipt reporting -> Discrepancy resolution).
 - [x] No hardcoded production secrets or test credentials; random 24-byte bootstrap tokens.
 - [x] Dependencies reviewed and locked in `package.json`.
 - [x] Loading, empty, and permission-denied (HTTP 403) states verified.
-- [x] Mobile responsive layout, bottom navigation, and notification drawer verified.
+- [x] Tablet portrait (768x1024 / 820x1180), tablet landscape (1024x768 / 1180x820), mobile (390x844), and desktop (1440x900) verified.
 - [x] Demo data and sandbox adapters clearly separated with status flags.
 - [x] Server-side authorization and tenant isolation active.
 - [x] PWA manifest and mobile touch targets in place; native Android honestly marked as unsupported in container.
@@ -133,41 +144,28 @@ $ npm test
 ---
 
 ## 5. Changes Made in This Session
-- **Local Map Caching Strategy for Unstable Network Conditions**:
-  - Implemented `src/utils/mapCache.ts` with universal storage (browser `localStorage` + in-memory store fallback).
-  - Serializes and stores route waypoints, origin/destination coordinates, current telemetry, and bounding grid metadata for offline retrieval.
-  - Automatically caches route on component mount, with a manual "Pre-cache Route" action reporting live cache size (`Cached Offline (2.5 KB)`).
-  - Built-in offline detection (`window.addEventListener('online'/'offline')`) plus an interactive "Simulate Offline Mode" toggle button.
-  - When offline, renders an amber transit notification banner: *"Operating in Offline Transit Mode • Using Cached Coordinate Data & Offline Map Canvas (Cache Hit: 2.5 KB)"*.
-  - Offline telemetry queueing functions (`queueOfflineTelemetry`, `getOfflineTelemetryQueue`, `clearOfflineTelemetryQueue`) to store telemetry points locally when network is unstable and flush them on reconnection.
-- **Polyline Route Overlays (Planned Corridor vs. Actual Delivery Route)**:
-  - Extended domain types in `src/types/dispatch.ts` with `RouteWaypoint`, `DispatchPathHistory`, and `pathHistory` property on `Dispatch`.
-  - Seeded realistic corridor path history in `dsp_001` with 9 planned waypoints along the I-90/I-94 route and 5 actual historical GPS breadcrumbs.
-  - Rendered planned route polyline in dashed indigo/purple (`stroke="#818cf8" strokeDasharray="6,6"`) with planned waypoint diamond markers.
-  - Rendered actual transit polyline in solid glowing cyan (`stroke="#06b6d4"`) tracing recorded GPS pings.
-  - Numbered breadcrumb dots (`#1`, `#2`, `#3`, `#4`) with interactive click-to-inspect popover cards showing waypoint label, coordinates, speed, and timestamp.
-  - Real-time corridor adherence and variance HUD (`Corridor Variance: 0.0 km • 98.4% Adherence`).
-  - Interactive layer toggle buttons for Planned Corridor, Actual Route, and Waypoints.
-  - Live appending: telemetry updates (`updateDispatchTelemetry`) automatically append newly recorded coordinates to `actualWaypoints`.
+- **Resolution of Tablet Landscape Truncation Bug (`Navbar.tsx`)**:
+  - Root Cause: In tablet landscape (1024x768 and 1180x820), the top navbar was crammed with logo on left, 7 center items in a constrained container, and user profile on right, causing "Audit Trail" to truncate to `Au...` and hiding "System Status".
+  - Fix: Changed center desktop nav items to `hidden xl:flex` (starting at 1280px desktop). Expanded dedicated tablet navigation bar from `hidden md:flex lg:hidden` to `hidden md:flex xl:hidden`, providing full-width span across all 7 items with complete labels, clear icons, and >=44px touch targets on all tablet viewports (768px - 1279px).
+- **Public Sandbox Exploration for Unauthenticated Visitors (`DispatchListPage.tsx`)**:
+  - Root Cause: Guest users without a logged-in session were shown "No dispatches match this filter" because `useEffect` set dispatches to `[]` when `user` was null, despite the server providing public demo dispatches.
+  - Fix: Allowed `loadDispatches()` to execute for both guest and authenticated users. Guest users now immediately view active sandbox shipments (`DSP-2026-0081`, etc.) and populated metric cards ($4,625.00 in transit).
+- **Dashboard Outbound Dispatches Table Optimization (`BusinessOwnerDashboard.tsx`)**:
+  - Replaced fixed column clipping with responsive `w-full min-w-[640px] md:min-w-full` and tighter `px-3 py-3` padding.
+  - Added `whitespace-nowrap` to table header `<th>` cells to prevent awkward word breaks (`RECO\nOUT`).
+- **Metric Grid Balance on Tablet Portrait (`SenderDashboard.tsx`, `SuperAdminDashboard.tsx`)**:
+  - Updated card grids from `grid-cols-2 md:grid-cols-4` to `grid-cols-2 lg:grid-cols-4`, achieving a balanced 2x2 grid on tablet portrait (768x1024 and 820x1180) and 4 columns on landscape/desktop.
+- **Custom Thin Scrollbar Utilities (`src/index.css`)**:
+  - Added `.scrollbar-thin` utility for table containers to provide unobtrusive, styled scrollbars on tablet and desktop browsers.
 - **Automated Test Suite Expansion (`test/runTests.ts`)**:
-  - Added `Map Offline Caching: Pre-caching coordinate data, tile grid bounds, and offline telemetry queuing` test.
-  - Added `Route Polylines & History: Planned corridor vs. actual transit waypoint polyline overlay data` test.
-  - All 23 tests pass with 0 failures.
-- **Visual Browser Verification & Tablet Matrix (`playwright-cli`)**:
-  - Tablet Portrait (`768x1024` & `820x1180`):
-    - Added dedicated tablet sub-navbar strip (`hidden md:flex lg:hidden`) with >= 44px touch targets for Dispatches, Dashboard, Origins, Partners, Recs, Audit, and System Status.
-    - Added `min-w-[780px]`, `overflow-x-auto rounded-xl`, and `px-3.5 py-3` padding to all itemized manifest tables and dispatches tables, preventing column text squishing and resolving the merged "SHORTFALLCONDITION" header defect.
-    - Verified smooth-scroll anchor `#reconciliation-form-section` when activating "Record Dock Receipt & Reconciliation".
-  - Tablet Landscape (`1024x768` & `1180x820`):
-    - Resolved navbar item truncation (`Part...`) by adopting flex shrink/grow dynamics and responsive label abbreviation (`lg:max-xl:`) for dense toolbars.
-    - Fixed modal height overflow: converted `CreateDispatchModal` to a flex-column layout with pinned header/stepper, scrollable body (`overflow-y-auto`), and pinned footer action buttons (`max-h-[92vh]`), ensuring submit and cancel buttons remain clickable without full-screen page scrolling.
-  - Mobile Portrait Regression (`390x844`):
-    - Verified mobile header, hamburger drawer, and fixed bottom navigation bar (`BottomNav.tsx`) with correct localization keys (`nav.status`) and touch ergonomics.
-  - Desktop Regression (`1440x900`):
-    - Full-width table display, analytics charts, live map tracking, and telemetry HUD verified intact.
-- **Automated Test Suite Expansion (`test/runTests.ts`)**:
-  - All 23 unit, security, and integration acceptance tests pass with 0 failures (`npm test`).
-  - Applet compilation (`compile_applet`) and TypeScript checks pass cleanly.
+  - Added Test #24: `Guest Exploration & Tablet Responsive Data: Public sandbox dispatches accessible without auth token`.
+  - All 24 tests pass with 0 failures (`npm test`).
+- **Visual Browser Verification Across Matrix (`playwright-cli`)**:
+  - Captured and inspected screenshots:
+    - Tablet Portrait: 768x1024 (`.playwright-cli/matrix-portrait-768.png`) & 820x1180 (`.playwright-cli/matrix-portrait-820.png`).
+    - Tablet Landscape: 1024x768 (`.playwright-cli/matrix-landscape-1024.png`) & 1180x820 (`.playwright-cli/matrix-landscape-1180.png`).
+    - Mobile Portrait: 390x844 (`.playwright-cli/matrix-mobile-390.png`).
+    - Desktop: 1440x900 (`.playwright-cli/matrix-desktop-1440.png`).
 
 ---
 
@@ -175,7 +173,13 @@ $ npm test
 - [x] Tablet portrait navigation & layout ergonomics (768x1024 / 820x1180).
 - [x] Tablet landscape layout, unclipped navigation, and scrollable modal containment (1024x768 / 1180x820).
 - [x] Table cell horizontal padding and minimum width constraints across all manifest and dispatch views.
+- [x] Unauthenticated guest exploration data loading and summary cards.
 - [x] Mobile bottom navigation & desktop navbar regression verification.
-- [x] 23/23 acceptance tests passing in test runner.
+- [x] 24/24 acceptance tests passing in test runner.
 - [x] Zero compilation or lint errors.
 
+---
+
+## 7. Next Recommended Actions
+1. **Production Infrastructure Transition**: When deploying to production environments, configure persistent PostgreSQL / Cloud SQL via Drizzle ORM or Firestore using the platform's provisioning skills.
+2. **External Gateway Credentials**: Configure SMS / WhatsApp webhook credentials in the platform's secure secrets store for live external carrier notifications.

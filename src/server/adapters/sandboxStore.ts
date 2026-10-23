@@ -8,6 +8,7 @@ import {
   DispatchStatus,
   ItemCondition,
   Location,
+  Membership,
   NotificationItem,
   Partner,
   SystemStatusInfo,
@@ -53,6 +54,18 @@ const businesses: Business[] = [
     ownerUserIds: ['usr_receiver_metro'],
     createdAt: '2026-02-10T09:30:00.000Z',
   },
+  {
+    id: 'biz_midwest_coldchain',
+    name: 'Midwest Cold-Chain Express',
+    registrationNumber: 'REG-992144-US',
+    countryCode: 'US',
+    contactEmail: 'express@midwestcoldchain.com',
+    contactPhone: '+1-555-019-3388',
+    address: '900 Frostbite Parkway, Cold Terminal 2, Des Moines, IA',
+    status: 'ACTIVE',
+    ownerUserIds: ['usr_business_owner'],
+    createdAt: '2026-02-15T08:00:00.000Z',
+  },
 ];
 
 // Pre-seeded Origin Locations
@@ -95,6 +108,19 @@ const locations: Location[] = [
     latitude: 44.9778,
     longitude: -93.2650,
     createdAt: '2026-02-10T10:00:00.000Z',
+  },
+  {
+    id: 'loc_midwest_cold',
+    businessId: 'biz_midwest_coldchain',
+    label: 'Des Moines Cold Storage - Bay 1',
+    addressLines: '900 Frostbite Parkway, Bay 1',
+    city: 'Des Moines',
+    region: 'IA',
+    countryCode: 'US',
+    isDefault: true,
+    latitude: 41.5900,
+    longitude: -93.6100,
+    createdAt: '2026-02-15T08:00:00.000Z',
   },
 ];
 
@@ -182,6 +208,15 @@ const users: Array<User & { passwordHash: string }> = [
         role: 'BUSINESS_OWNER',
         status: 'ACTIVE',
         createdAt: '2026-01-15T08:00:00.000Z',
+      },
+      {
+        id: 'mem_001_midwest',
+        userId: 'usr_business_owner',
+        businessId: 'biz_midwest_coldchain',
+        businessName: 'Midwest Cold-Chain Express',
+        role: 'BUSINESS_OWNER',
+        status: 'ACTIVE',
+        createdAt: '2026-02-15T08:00:00.000Z',
       },
     ],
     createdAt: '2026-01-15T08:00:00.000Z',
@@ -1059,6 +1094,66 @@ export class SandboxStore implements IAuthAdapter, IDatabaseAdapter, INotificati
 
     const { passwordHash, ...safeUser } = user;
     return safeUser;
+  }
+
+  async createBusiness(
+    userId: string,
+    payload: {
+      name: string;
+      registrationNumber?: string;
+      countryCode?: string;
+      contactEmail: string;
+      contactPhone: string;
+      address: string;
+    }
+  ): Promise<{ business: Business; user: User }> {
+    const user = users.find((u) => u.id === userId);
+    if (!user) throw new Error('User not found.');
+
+    const newBizId = `biz_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+    const newBiz: Business = {
+      id: newBizId,
+      name: payload.name.trim(),
+      registrationNumber: payload.registrationNumber?.trim() || `REG-${Math.floor(100000 + Math.random() * 900000)}-US`,
+      countryCode: payload.countryCode || 'US',
+      contactEmail: payload.contactEmail.trim(),
+      contactPhone: payload.contactPhone.trim(),
+      address: payload.address.trim(),
+      status: 'ACTIVE',
+      ownerUserIds: [userId],
+      createdAt: new Date().toISOString(),
+    };
+
+    businesses.push(newBiz);
+
+    const newMem: Membership = {
+      id: `mem_${Date.now().toString(36)}`,
+      userId,
+      businessId: newBizId,
+      businessName: newBiz.name,
+      role: 'BUSINESS_OWNER',
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString(),
+    };
+
+    user.memberships.push(newMem);
+    user.businessId = newBiz.id;
+    user.businessName = newBiz.name;
+    user.role = 'BUSINESS_OWNER';
+    user.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      action: 'BUSINESS_CREATED',
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      entityType: 'BUSINESS',
+      entityId: newBiz.id,
+      details: `New business entity "${newBiz.name}" registered and activated by ${user.name}.`,
+    });
+
+    const { passwordHash, ...safeUser } = user;
+    return { business: newBiz, user: safeUser };
   }
 
   // --- Database Adapter: Dispatches ---

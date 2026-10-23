@@ -1,5 +1,6 @@
 import {
   AuditLogEntry,
+  Business,
   Dispatch,
   Location,
   NotificationItem,
@@ -142,6 +143,23 @@ class ApiService {
     this.user = res.user;
     localStorage.setItem(USER_KEY, JSON.stringify(res.user));
     return res.user;
+  }
+
+  async createBusiness(payload: {
+    name: string;
+    registrationNumber?: string;
+    countryCode?: string;
+    contactEmail: string;
+    contactPhone: string;
+    address: string;
+  }): Promise<{ business: Business; user: User }> {
+    const res = await this.request<{ business: Business; user: User }>('/api/auth/create-business', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    this.user = res.user;
+    localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+    return res;
   }
 
   async requestPasswordReset(email: string): Promise<{ success: boolean; resetTokenPreview?: string }> {

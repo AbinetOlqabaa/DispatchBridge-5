@@ -252,33 +252,33 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+          <table className="w-full text-left text-xs min-w-[720px]">
+            <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="pb-3 font-semibold">Dispatch Number</th>
-                <th className="pb-3 font-semibold">Partner Destination</th>
-                <th className="pb-3 font-semibold">Status</th>
-                <th className="pb-3 font-semibold">Items</th>
-                <th className="pb-3 font-semibold">Reconciliation Outcome</th>
-                <th className="pb-3 font-semibold text-right">Action</th>
+                <th className="px-3.5 py-3 font-semibold">Dispatch Number</th>
+                <th className="px-3.5 py-3 font-semibold">Partner Destination</th>
+                <th className="px-3.5 py-3 font-semibold">Status</th>
+                <th className="px-3.5 py-3 font-semibold">Items</th>
+                <th className="px-3.5 py-3 font-semibold">Reconciliation Outcome</th>
+                <th className="px-3.5 py-3 font-semibold text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {dispatches.slice(0, 5).map((d) => (
                 <tr key={d.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="py-3.5 font-mono font-semibold text-indigo-300">{d.dispatchNumber}</td>
-                  <td className="py-3.5 text-slate-200">
+                  <td className="px-3.5 py-3.5 font-mono font-semibold text-indigo-300 whitespace-nowrap">{d.dispatchNumber}</td>
+                  <td className="px-3.5 py-3.5 text-slate-200">
                     <div>{d.partnerName}</div>
                     <div className="text-[11px] text-slate-500 truncate max-w-xs">{d.destinationSnapshot.address}</div>
                   </td>
-                  <td className="py-3.5">
+                  <td className="px-3.5 py-3.5 whitespace-nowrap">
                     <StatusBadge status={d.status} size="sm" />
                   </td>
-                  <td className="py-3.5 text-slate-300">
+                  <td className="px-3.5 py-3.5 text-slate-300 whitespace-nowrap">
                     {d.totalQuantityDispatched} {d.lines[0]?.unit || 'units'}
                   </td>
-                  <td className="py-3.5">
+                  <td className="px-3.5 py-3.5 whitespace-nowrap">
                     {d.totalQuantityLost !== undefined ? (
                       d.totalQuantityLost > 0 ? (
                         <span className="text-rose-400 font-semibold flex items-center gap-1">
@@ -295,7 +295,7 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
                       <span className="text-slate-500">Pending Receipt</span>
                     )}
                   </td>
-                  <td className="py-3.5 text-right">
+                  <td className="px-3.5 py-3.5 text-right whitespace-nowrap">
                     <button
                       onClick={() => onSelectDispatch(d.id)}
                       className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium cursor-pointer"

@@ -149,23 +149,23 @@ export const SenderDashboard: React.FC<SenderDashboardProps> = ({
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+          <table className="w-full text-left text-xs min-w-[760px]">
+            <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="pb-3 font-semibold">Dispatch Number</th>
-                <th className="pb-3 font-semibold">Partner Destination</th>
-                <th className="pb-3 font-semibold">Status</th>
-                <th className="pb-3 font-semibold">Partner Viewed Status</th>
-                <th className="pb-3 font-semibold">Driver & Cargo</th>
-                <th className="pb-3 font-semibold text-right">Share / Link</th>
-                <th className="pb-3 font-semibold text-right">Detail</th>
+                <th className="px-3.5 py-3 font-semibold">Dispatch Number</th>
+                <th className="px-3.5 py-3 font-semibold">Partner Destination</th>
+                <th className="px-3.5 py-3 font-semibold">Status</th>
+                <th className="px-3.5 py-3 font-semibold">Partner Viewed Status</th>
+                <th className="px-3.5 py-3 font-semibold">Driver & Cargo</th>
+                <th className="px-3.5 py-3 font-semibold text-right">Share / Link</th>
+                <th className="px-3.5 py-3 font-semibold text-right">Detail</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {filteredDispatches.map((d) => (
                 <tr key={d.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="py-3.5 font-mono font-semibold text-indigo-300">
+                  <td className="px-3.5 py-3.5 font-mono font-semibold text-indigo-300 whitespace-nowrap">
                     <button
                       onClick={() => onSelectDispatch(d.id)}
                       className="hover:underline text-left cursor-pointer"
@@ -176,14 +176,14 @@ export const SenderDashboard: React.FC<SenderDashboardProps> = ({
                       {new Date(d.createdAt).toLocaleDateString()}
                     </div>
                   </td>
-                  <td className="py-3.5 text-slate-200">
+                  <td className="px-3.5 py-3.5 text-slate-200">
                     <div className="font-semibold">{d.partnerName}</div>
                     <div className="text-[11px] text-slate-400 truncate max-w-xs">{d.destinationSnapshot.address}</div>
                   </td>
-                  <td className="py-3.5">
+                  <td className="px-3.5 py-3.5 whitespace-nowrap">
                     <StatusBadge status={d.status} size="sm" />
                   </td>
-                  <td className="py-3.5">
+                  <td className="px-3.5 py-3.5 whitespace-nowrap">
                     {d.firstViewedAt ? (
                       <div className="flex items-center gap-1.5 text-indigo-300">
                         <Eye className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
@@ -201,13 +201,13 @@ export const SenderDashboard: React.FC<SenderDashboardProps> = ({
                       </div>
                     )}
                   </td>
-                  <td className="py-3.5 text-slate-300">
+                  <td className="px-3.5 py-3.5 text-slate-300 whitespace-nowrap">
                     <div>{d.driverName ? `${d.driverName} (${d.vehicleReg || 'Truck'})` : 'Carrier Unassigned'}</div>
                     <div className="text-[11px] text-slate-500">
                       {d.lines.length} line items • {d.totalQuantityDispatched} units
                     </div>
                   </td>
-                  <td className="py-3.5 text-right">
+                  <td className="px-3.5 py-3.5 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         onClick={() => handleCopyLink(d.shareToken, d.id)}
@@ -225,7 +225,7 @@ export const SenderDashboard: React.FC<SenderDashboardProps> = ({
                       </button>
                     </div>
                   </td>
-                  <td className="py-3.5 text-right">
+                  <td className="px-3.5 py-3.5 text-right whitespace-nowrap">
                     <button
                       onClick={() => onSelectDispatch(d.id)}
                       className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium cursor-pointer"

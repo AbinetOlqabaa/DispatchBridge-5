@@ -153,14 +153,29 @@ $ npm test
   - Added `Map Offline Caching: Pre-caching coordinate data, tile grid bounds, and offline telemetry queuing` test.
   - Added `Route Polylines & History: Planned corridor vs. actual transit waypoint polyline overlay data` test.
   - All 23 tests pass with 0 failures.
-- **Visual Browser Verification via `playwright-cli`**:
-  - Desktop capture (1440x900) verified polyline layers, breadcrumbs, and live telemetry HUD.
-  - Toggled offline mode simulation: verified amber offline transit banner and cache indicators.
-  - Clicked waypoint `#3`: verified interactive inspection popover card with coordinates and speed.
-  - Mobile capture (390x844) verified responsive reflow without horizontal scroll.
-  - Type-check (`npm run lint`), build (`compile_applet`), and tests (`npm test`) verified clean.
+- **Visual Browser Verification & Tablet Matrix (`playwright-cli`)**:
+  - Tablet Portrait (`768x1024` & `820x1180`):
+    - Added dedicated tablet sub-navbar strip (`hidden md:flex lg:hidden`) with >= 44px touch targets for Dispatches, Dashboard, Origins, Partners, Recs, Audit, and System Status.
+    - Added `min-w-[780px]`, `overflow-x-auto rounded-xl`, and `px-3.5 py-3` padding to all itemized manifest tables and dispatches tables, preventing column text squishing and resolving the merged "SHORTFALLCONDITION" header defect.
+    - Verified smooth-scroll anchor `#reconciliation-form-section` when activating "Record Dock Receipt & Reconciliation".
+  - Tablet Landscape (`1024x768` & `1180x820`):
+    - Resolved navbar item truncation (`Part...`) by adopting flex shrink/grow dynamics and responsive label abbreviation (`lg:max-xl:`) for dense toolbars.
+    - Fixed modal height overflow: converted `CreateDispatchModal` to a flex-column layout with pinned header/stepper, scrollable body (`overflow-y-auto`), and pinned footer action buttons (`max-h-[92vh]`), ensuring submit and cancel buttons remain clickable without full-screen page scrolling.
+  - Mobile Portrait Regression (`390x844`):
+    - Verified mobile header, hamburger drawer, and fixed bottom navigation bar (`BottomNav.tsx`) with correct localization keys (`nav.status`) and touch ergonomics.
+  - Desktop Regression (`1440x900`):
+    - Full-width table display, analytics charts, live map tracking, and telemetry HUD verified intact.
+- **Automated Test Suite Expansion (`test/runTests.ts`)**:
+  - All 23 unit, security, and integration acceptance tests pass with 0 failures (`npm test`).
+  - Applet compilation (`compile_applet`) and TypeScript checks pass cleanly.
 
 ---
 
-## 6. Exact Next Action for a New Session
-The application is fully operational and verified end-to-end in real browser and automated testing. All requested features—including local map caching strategy for unstable network connections and planned vs. actual delivery route polyline overlays with interactive breadcrumbs—are complete and passing all 23 acceptance tests. For staging deployment, connect external Cloud SQL / Firestore credentials and production SMS/Email gateways.
+## 6. Current Acceptance Criteria Status
+- [x] Tablet portrait navigation & layout ergonomics (768x1024 / 820x1180).
+- [x] Tablet landscape layout, unclipped navigation, and scrollable modal containment (1024x768 / 1180x820).
+- [x] Table cell horizontal padding and minimum width constraints across all manifest and dispatch views.
+- [x] Mobile bottom navigation & desktop navbar regression verification.
+- [x] 23/23 acceptance tests passing in test runner.
+- [x] Zero compilation or lint errors.
+

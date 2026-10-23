@@ -287,36 +287,36 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onNavi
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+          <table className="w-full text-left text-xs min-w-[760px]">
+            <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="pb-3 font-semibold">Timestamp</th>
-                <th className="pb-3 font-semibold">Actor / Entity</th>
-                <th className="pb-3 font-semibold">Action</th>
-                <th className="pb-3 font-semibold">Target Entity</th>
-                <th className="pb-3 font-semibold">Details & Integrity Trail</th>
+                <th className="px-3.5 py-3 font-semibold">Timestamp</th>
+                <th className="px-3.5 py-3 font-semibold">Actor / Entity</th>
+                <th className="px-3.5 py-3 font-semibold">Action</th>
+                <th className="px-3.5 py-3 font-semibold">Target Entity</th>
+                <th className="px-3.5 py-3 font-semibold">Details & Integrity Trail</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
               {filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-800/40">
-                  <td className="py-2.5 text-slate-400 whitespace-nowrap">
+                  <td className="px-3.5 py-2.5 text-slate-400 whitespace-nowrap">
                     {new Date(log.timestamp).toLocaleString()}
                   </td>
-                  <td className="py-2.5 whitespace-nowrap">
+                  <td className="px-3.5 py-2.5 whitespace-nowrap">
                     <span className="font-semibold text-slate-200">{log.actorName}</span>
                     <span className="text-[10px] text-slate-500 block">Role: {log.actorRole}</span>
                   </td>
-                  <td className="py-2.5">
+                  <td className="px-3.5 py-2.5">
                     <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
                       {log.action}
                     </span>
                   </td>
-                  <td className="py-2.5 text-indigo-300 whitespace-nowrap">
+                  <td className="px-3.5 py-2.5 text-indigo-300 whitespace-nowrap">
                     {log.entityType}: {log.entityId}
                   </td>
-                  <td className="py-2.5 text-slate-300 font-sans text-xs">
+                  <td className="px-3.5 py-2.5 text-slate-300 font-sans text-xs">
                     {log.details}
                   </td>
                 </tr>

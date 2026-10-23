@@ -331,24 +331,24 @@ export const DispatchListPage: React.FC<DispatchListPageProps> = ({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+          <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+            <table className="w-full text-left text-xs min-w-[860px]">
+              <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
                 <tr>
-                  <th className="pb-3 font-semibold">{t('table.dispatch_number')}</th>
-                  <th className="pb-3 font-semibold">{t('table.sender_supplier')}</th>
-                  <th className="pb-3 font-semibold">{t('table.destination_partner')}</th>
-                  <th className="pb-3 font-semibold">{t('table.status')}</th>
-                  <th className="pb-3 font-semibold">{t('table.view_tracking')}</th>
-                  <th className="pb-3 font-semibold">{t('table.quantity_loss')}</th>
-                  <th className="pb-3 font-semibold text-right">{t('table.share_link')}</th>
-                  <th className="pb-3 font-semibold text-right">{t('table.action')}</th>
+                  <th className="px-3.5 py-3 font-semibold">{t('table.dispatch_number')}</th>
+                  <th className="px-3.5 py-3 font-semibold">{t('table.sender_supplier')}</th>
+                  <th className="px-3.5 py-3 font-semibold">{t('table.destination_partner')}</th>
+                  <th className="px-3.5 py-3 font-semibold">{t('table.status')}</th>
+                  <th className="px-3.5 py-3 font-semibold">{t('table.view_tracking')}</th>
+                  <th className="px-3.5 py-3 font-semibold">{t('table.quantity_loss')}</th>
+                  <th className="px-3.5 py-3 font-semibold text-right">{t('table.share_link')}</th>
+                  <th className="px-3.5 py-3 font-semibold text-right">{t('table.action')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {filteredDispatches.map((d) => (
                   <tr key={d.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 font-mono font-semibold text-indigo-300">
+                    <td className="px-3.5 py-3.5 font-mono font-semibold text-indigo-300 whitespace-nowrap">
                       <button
                         onClick={() => onSelectDispatch(d.id)}
                         className="hover:underline text-left cursor-pointer"
@@ -359,18 +359,18 @@ export const DispatchListPage: React.FC<DispatchListPageProps> = ({
                         {new Date(d.createdAt).toLocaleDateString()}
                       </div>
                     </td>
-                    <td className="py-3.5 text-slate-300">
+                    <td className="px-3.5 py-3.5 text-slate-300">
                       <div className="font-medium text-slate-200">{d.senderBusinessName}</div>
                       <div className="text-[10px] text-slate-500">By {d.senderName}</div>
                     </td>
-                    <td className="py-3.5 text-slate-200">
+                    <td className="px-3.5 py-3.5 text-slate-200">
                       <div className="font-semibold">{d.partnerName}</div>
                       <div className="text-[10px] text-slate-400 truncate max-w-xs">{d.destinationSnapshot?.address || 'Partner Destination'}</div>
                     </td>
-                    <td className="py-3.5">
+                    <td className="px-3.5 py-3.5 whitespace-nowrap">
                       <StatusBadge status={d.status} size="sm" />
                     </td>
-                    <td className="py-3.5">
+                    <td className="px-3.5 py-3.5 whitespace-nowrap">
                       {d.firstViewedAt ? (
                         <div className="flex items-center gap-1.5 text-indigo-300">
                           <Eye className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
@@ -385,7 +385,7 @@ export const DispatchListPage: React.FC<DispatchListPageProps> = ({
                         <span className="text-[11px] text-slate-500">Unviewed</span>
                       )}
                     </td>
-                    <td className="py-3.5">
+                    <td className="px-3.5 py-3.5 whitespace-nowrap">
                       <div className="font-mono text-slate-200">
                         {d.totalQuantityDispatched} units
                       </div>
@@ -400,7 +400,7 @@ export const DispatchListPage: React.FC<DispatchListPageProps> = ({
                         <span className="text-[10px] text-slate-500">Pending</span>
                       )}
                     </td>
-                    <td className="py-3.5 text-right">
+                    <td className="px-3.5 py-3.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleCopyLink(d.shareToken, d.id)}
@@ -422,7 +422,7 @@ export const DispatchListPage: React.FC<DispatchListPageProps> = ({
                         </button>
                       </div>
                     </td>
-                    <td className="py-3.5 text-right">
+                    <td className="px-3.5 py-3.5 text-right whitespace-nowrap">
                       <button
                         onClick={() => onSelectDispatch(d.id)}
                         className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium cursor-pointer"

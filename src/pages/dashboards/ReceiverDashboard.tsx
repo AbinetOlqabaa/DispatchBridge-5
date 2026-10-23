@@ -134,27 +134,27 @@ export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDi
           Completed Receipt Archive
         </h2>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+          <table className="w-full text-left text-xs min-w-[700px]">
+            <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="pb-3 font-semibold">Dispatch Number</th>
-                <th className="pb-3 font-semibold">Supplier</th>
-                <th className="pb-3 font-semibold">Status</th>
-                <th className="pb-3 font-semibold">Sent vs Received</th>
-                <th className="pb-3 font-semibold">Signed By</th>
-                <th className="pb-3 font-semibold text-right">Details</th>
+                <th className="px-3.5 py-3 font-semibold">Dispatch Number</th>
+                <th className="px-3.5 py-3 font-semibold">Supplier</th>
+                <th className="px-3.5 py-3 font-semibold">Status</th>
+                <th className="px-3.5 py-3 font-semibold">Sent vs Received</th>
+                <th className="px-3.5 py-3 font-semibold">Signed By</th>
+                <th className="px-3.5 py-3 font-semibold text-right">Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {completedReceipts.map((d) => (
                 <tr key={d.id} className="hover:bg-slate-800/40">
-                  <td className="py-3 font-mono font-semibold text-indigo-300">{d.dispatchNumber}</td>
-                  <td className="py-3 text-slate-300">{d.senderBusinessName}</td>
-                  <td className="py-3">
+                  <td className="px-3.5 py-3.5 font-mono font-semibold text-indigo-300 whitespace-nowrap">{d.dispatchNumber}</td>
+                  <td className="px-3.5 py-3.5 text-slate-300">{d.senderBusinessName}</td>
+                  <td className="px-3.5 py-3.5 whitespace-nowrap">
                     <StatusBadge status={d.status} size="sm" />
                   </td>
-                  <td className="py-3">
+                  <td className="px-3.5 py-3.5 whitespace-nowrap">
                     <div className="font-mono">
                       {d.totalQuantityReceived ?? 0} / {d.totalQuantityDispatched} units
                     </div>
@@ -166,13 +166,13 @@ export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDi
                       <span className="text-[10px] text-emerald-400 font-medium">100% Intact</span>
                     )}
                   </td>
-                  <td className="py-3 text-slate-300">
+                  <td className="px-3.5 py-3.5 text-slate-300 whitespace-nowrap">
                     <div>{d.receiverSignoff?.signerName || 'Verified'}</div>
                     <div className="text-[10px] text-slate-500">
                       {d.receivedAt ? new Date(d.receivedAt).toLocaleDateString() : ''}
                     </div>
                   </td>
-                  <td className="py-3 text-right">
+                  <td className="px-3.5 py-3.5 text-right whitespace-nowrap">
                     <button
                       onClick={() => onSelectDispatch(d.id)}
                       className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs cursor-pointer"

@@ -361,7 +361,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
 
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <div className="text-xs font-medium text-slate-400">Total Cargo Quantity</div>
+              <div className="text-xs font-medium text-slate-400">{t('dispatch.total_cargo_qty', 'Total Cargo Quantity')}</div>
               <div className="text-lg font-bold text-white font-mono">{dispatch.totalQuantityDispatched} {t('unit.units', 'units')}</div>
             </div>
           </div>
@@ -372,7 +372,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
           <div className="bg-slate-800/40 p-3.5 rounded-xl border border-slate-800">
             <div className="text-slate-400 mb-1 flex items-center gap-1.5 font-semibold">
               <Warehouse className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Origin Loading Terminal</span>
+              <span>{t('dispatch.origin_terminal', 'Origin Loading Terminal')}</span>
             </div>
             <div className="font-semibold text-white text-sm">{dispatch.originLocationSnapshot.label}</div>
             <div className="text-slate-400 text-[11px] mt-0.5">{dispatch.originLocationSnapshot.address}</div>
@@ -381,7 +381,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
           <div className="bg-slate-800/40 p-3.5 rounded-xl border border-slate-800">
             <div className="text-slate-400 mb-1 flex items-center gap-1.5 font-semibold">
               <Building className="w-3.5 h-3.5 text-sky-400" />
-              <span>Receiving Partner Destination</span>
+              <span>{t('dispatch.partner_dest', 'Receiving Partner Destination')}</span>
             </div>
             <div className="font-semibold text-white text-sm">{dispatch.destinationSnapshot.partnerName}</div>
             <div className="text-slate-400 text-[11px] mt-0.5">{dispatch.destinationSnapshot.address}</div>
@@ -393,9 +393,9 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
           <div className="bg-slate-800/40 p-3.5 rounded-xl border border-slate-800 sm:col-span-2 lg:col-span-1">
             <div className="text-slate-400 mb-1 flex items-center gap-1.5 font-semibold">
               <Truck className="w-3.5 h-3.5 text-blue-400" />
-              <span>Carrier & Driver</span>
+              <span>{t('dispatch.carrier_driver', 'Carrier & Driver')}</span>
             </div>
-            <div className="font-semibold text-white text-sm">{dispatch.driverName || 'Standard Freight'}</div>
+            <div className="font-semibold text-white text-sm">{dispatch.driverName || t('dispatch.standard_freight', 'Standard Freight')}</div>
             <div className="text-slate-400 text-[11px] mt-0.5">
               {dispatch.vehicleReg ? `Plate: ${dispatch.vehicleReg}` : ''} {dispatch.driverPhone ? `• ${dispatch.driverPhone}` : ''}
             </div>
@@ -421,21 +421,21 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
           {dispatch.firstViewedAt ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-300 pt-1">
               <div>
-                <span className="text-slate-500">First Opened:</span>{' '}
+                <span className="text-slate-500">{t('dispatch.first_opened', 'First Opened:')}</span>{' '}
                 <span className="font-mono text-white">{new Date(dispatch.firstViewedAt).toLocaleString()}</span>
               </div>
               <div>
-                <span className="text-slate-500">Total Views:</span>{' '}
+                <span className="text-slate-500">{t('dispatch.first_opened', 'Total Views:')}</span>{' '}
                 <span className="font-mono text-white">{t('recon.view_count', 'Total Views: {count} times', { count: dispatch.viewReceipt?.viewCount || 1 })}</span>
               </div>
               <div>
-                <span className="text-slate-500">Viewer:</span>{' '}
+                <span className="text-slate-500">{t('dispatch.viewer', 'Viewer:')}</span>{' '}
                 <span className="text-indigo-300 font-medium">{dispatch.viewReceipt?.viewerName || dispatch.partnerName}</span>
               </div>
             </div>
           ) : (
             <p className="text-[11px] text-slate-400">
-              The recipient has not accessed or opened this delivery list. A view timestamp will be recorded the moment an authenticated partner opens this manifest.
+              {t('dispatch.unopened_desc', 'The recipient has not accessed or opened this delivery list. A view timestamp will be recorded the moment an authenticated partner opens this manifest.')}
             </p>
           )}
 
@@ -453,7 +453,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
 
         {dispatch.notes && (
           <div className="text-xs bg-slate-800/30 p-3 rounded-xl text-slate-300 border border-slate-800">
-            <span className="font-semibold text-slate-400 block mb-0.5">Instructions & Notes:</span>
+            <span className="font-semibold text-slate-400 block mb-0.5">{t('dispatch.instructions_notes', 'Instructions & Notes:')}</span>
             <p className="whitespace-pre-line">{dispatch.notes}</p>
           </div>
         )}
@@ -568,14 +568,14 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                       onClick={() => setRespondingCaseId(c.id)}
                       className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold cursor-pointer"
                     >
-                      Respond to Discrepancy
+                      {t('recon.respond_to_discrepancy', 'Respond to Discrepancy')}
                     </button>
                   </div>
                 )}
 
                 {respondingCaseId === c.id && (
                   <form onSubmit={handleRespondToDiscrepancy} className="p-3 bg-slate-900 rounded-xl border border-slate-700 space-y-2 mt-2">
-                    <div className="font-semibold text-white">Submit Sender Response</div>
+                    <div className="font-semibold text-white">{t('recon.submit_response', 'Submit Sender Response')}</div>
                     <div className="flex gap-4">
                       <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
                         <input
@@ -585,7 +585,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                           checked={discrepancyResponseStatus === 'ACKNOWLEDGED_BY_SENDER'}
                           onChange={() => setDiscrepancyResponseStatus('ACKNOWLEDGED_BY_SENDER')}
                         />
-                        <span>Acknowledge Shortage / Damage</span>
+                        <span>{t('recon.acknowledge_loss', 'Acknowledge Shortage / Damage')}</span>
                       </label>
                       <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
                         <input
@@ -595,7 +595,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                           checked={discrepancyResponseStatus === 'DISPUTED'}
                           onChange={() => setDiscrepancyResponseStatus('DISPUTED')}
                         />
-                        <span>Dispute Discrepancy</span>
+                        <span>{t('recon.dispute_loss', 'Dispute Discrepancy')}</span>
                       </label>
                     </div>
                     <textarea
@@ -612,14 +612,14 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                         onClick={() => setRespondingCaseId(null)}
                         className="px-3 py-1 text-slate-400 hover:text-white"
                       >
-                        Cancel
+                        {t('action.cancel', 'Cancel')}
                       </button>
                       <button
                         type="submit"
                         disabled={isSubmitting}
                         className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold"
                       >
-                        Submit Response
+                        {t('recon.submit_response', 'Submit Response')}
                       </button>
                     </div>
                   </form>
@@ -632,14 +632,14 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                       onClick={() => setResolvingCaseId(c.id)}
                       className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold cursor-pointer"
                     >
-                      Issue Formal Resolution & Close Case
+                      {t('recon.resolve_close', 'Issue Formal Resolution & Close Case')}
                     </button>
                   </div>
                 )}
 
                 {resolvingCaseId === c.id && (
                   <form onSubmit={handleResolveDiscrepancy} className="p-3 bg-slate-900 rounded-xl border border-purple-800 space-y-2 mt-2">
-                    <div className="font-semibold text-white">Record Final Business Resolution</div>
+                    <div className="font-semibold text-white">{t('recon.final_resolution', 'Record Final Business Resolution')}</div>
                     <textarea
                       required
                       rows={2}
@@ -654,14 +654,14 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                         onClick={() => setResolvingCaseId(null)}
                         className="px-3 py-1 text-slate-400 hover:text-white"
                       >
-                        Cancel
+                        {t('action.cancel', 'Cancel')}
                       </button>
                       <button
                         type="submit"
                         disabled={isSubmitting}
                         className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold"
                       >
-                        Resolve & Close Case
+                        {t('recon.resolve_close', 'Resolve & Close Case')}
                       </button>
                     </div>
                   </form>
@@ -733,7 +733,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                           ? 'bg-rose-950 text-rose-300 border border-rose-800'
                           : 'bg-slate-800 text-slate-300'
                       }`}>
-                        {line.condition}
+                        {t('condition.' + line.condition.toLowerCase(), line.condition)}
                       </span>
                     ) : (
                       '—'
@@ -742,7 +742,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                   <td className="px-3.5 py-3 font-sans whitespace-nowrap">
                     {line.discrepancyType && line.discrepancyType !== 'NONE' ? (
                       <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-950 text-rose-300 border border-rose-800">
-                        {line.discrepancyType}
+                        {t('discrepancy.' + line.discrepancyType.toLowerCase(), line.discrepancyType)}
                       </span>
                     ) : (
                       <span className="text-slate-500">—</span>
@@ -761,30 +761,30 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
         <div className="bg-slate-900 border border-emerald-900/60 rounded-2xl p-5 space-y-2">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white">Verified Delivery Sign-Off Certificate</h3>
+            <h3 className="text-sm font-bold text-white">{t('recon.certificate_title', 'Verified Delivery Sign-Off Certificate')}</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-2">
             <div>
-              <span className="text-slate-500">Signed By:</span>
+              <span className="text-slate-500">{t('recon.signed_by', 'Signed By:')}</span>
               <div className="font-semibold text-slate-200">{dispatch.receiverSignoff.signerName}</div>
               <div className="text-[11px] text-slate-400">{dispatch.receiverSignoff.signerRole}</div>
             </div>
             <div>
-              <span className="text-slate-500">Verification Timestamp:</span>
+              <span className="text-slate-500">{t('recon.verification_timestamp', 'Verification Timestamp:')}</span>
               <div className="font-semibold text-slate-200">
                 {new Date(dispatch.receiverSignoff.signedAt).toLocaleString()}
               </div>
             </div>
             <div>
-              <span className="text-slate-500">Receiver Comments:</span>
-              <div className="text-slate-300">{dispatch.receiverSignoff.comments || 'No remarks provided.'}</div>
+              <span className="text-slate-500">{t('recon.receiver_comments', 'Receiver Comments:')}</span>
+              <div className="text-slate-300">{dispatch.receiverSignoff.comments || t('recon.no_remarks', 'No remarks provided.')}</div>
             </div>
 
             {dispatch.receiverSignoff.signatureSvgOrBase64 && (
               <div className="sm:col-span-3 pt-3 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider block">
-                    Verified Digital Signature
+                    {t('recon.verified_signature', 'Verified Digital Signature')}
                   </span>
                   <div className="mt-1 bg-slate-950 p-2 rounded-xl border border-slate-800 inline-block">
                     <img
@@ -796,7 +796,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-3 py-1.5 rounded-xl">
                   <ShieldCheck className="w-4 h-4 shrink-0" />
-                  <span>Legally Enforceable Glass Sign-Off Locked</span>
+                  <span>{t('recon.glass_signoff_locked', 'Legally Enforceable Glass Sign-Off Locked')}</span>
                 </div>
               </div>
             )}
@@ -810,19 +810,19 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <FileCheck className="w-5 h-5 text-amber-400" />
-              <h3 className="text-sm font-bold text-white">Record Dock Receipt & Physical Count</h3>
+              <h3 className="text-sm font-bold text-white">{t('recon.record_receipt', 'Record Dock Receipt & Physical Count')}</h3>
             </div>
             <button
               onClick={() => setIsReconciling(false)}
               className="text-xs text-slate-400 hover:text-white cursor-pointer"
             >
-              Cancel
+              {t('action.cancel', 'Cancel')}
             </button>
           </div>
 
           <form onSubmit={handleSubmitReconciliation} className="space-y-4">
             <p className="text-xs text-slate-400">
-              Input the physical count received per line on the dock. If damage or shortage occurred, categorize the discrepancy accordingly.
+              {t('recon.record_receipt_desc', 'Input the physical count received per line on the dock. If damage or shortage occurred, categorize the discrepancy accordingly.')}
             </p>
 
             <div className="space-y-3">
@@ -835,13 +835,13 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                     <span className="text-white">
                       {line.sku} - {line.itemName}
                     </span>
-                    <span className="text-slate-400 font-mono">Dispatched: {line.quantitySent} {line.unit}</span>
+                    <span className="text-slate-400 font-mono">{t('table.dispatched', 'Dispatched')}: {line.quantitySent} {line.unit}</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                        Received Count ({line.unit}) *
+                        {t('table.received', 'Received Count')} ({line.unit}) *
                       </label>
                       <input
                         type="number"
@@ -855,41 +855,41 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
 
                     <div>
                       <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                        Condition
+                        {t('table.condition', 'Condition')}
                       </label>
                       <select
                         value={lineReceipts[idx]?.condition || 'GOOD'}
                         onChange={(e) => handleLineReceiptChange(idx, 'condition', e.target.value)}
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
                       >
-                        <option value="GOOD">Good / Intact</option>
-                        <option value="DAMAGED">Damaged</option>
-                        <option value="LOST">Lost / Missing</option>
+                        <option value="GOOD">{t('condition.good', 'Good / Intact')}</option>
+                        <option value="DAMAGED">{t('condition.damaged', 'Damaged')}</option>
+                        <option value="LOST">{t('discrepancy.lost', 'Lost / Missing')}</option>
                         <option value="OTHER">Other</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                        Discrepancy Category
+                        {t('table.discrepancy_category', 'Discrepancy Category')}
                       </label>
                       <select
                         value={lineReceipts[idx]?.discrepancyType || 'NONE'}
                         onChange={(e) => handleLineReceiptChange(idx, 'discrepancyType', e.target.value)}
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
                       >
-                        <option value="NONE">None (Full Count)</option>
-                        <option value="SHORTAGE">Shortage</option>
-                        <option value="DAMAGED">Damaged in Transit</option>
-                        <option value="OVERAGE">Overage (Excess)</option>
-                        <option value="NOT_RECEIVED">Not Received</option>
+                        <option value="NONE">{t('discrepancy.none', 'None (Full Count)')}</option>
+                        <option value="SHORTAGE">{t('discrepancy.shortage', 'Shortage')}</option>
+                        <option value="DAMAGED">{t('discrepancy.damaged', 'Damaged in Transit')}</option>
+                        <option value="OVERAGE">{t('discrepancy.overage', 'Overage (Excess)')}</option>
+                        <option value="NOT_RECEIVED">{t('discrepancy.lost', 'Not Received')}</option>
                         <option value="OTHER">Other</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                        Inspection Note
+                        {t('table.notes', 'Inspection Note')}
                       </label>
                       <input
                         type="text"
@@ -916,7 +916,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
             {/* Sign-off inputs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Receiver Signer Name *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('recon.signer_name', 'Receiver Signer Name')} *</label>
                 <input
                   type="text"
                   required
@@ -927,7 +927,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Supervisor / Role Title *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('recon.signer_role', 'Supervisor / Role Title')} *</label>
                 <input
                   type="text"
                   required
@@ -940,7 +940,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Dock Notes & Cargo Comments</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">{t('table.notes', 'Dock Notes & Cargo Comments')}</label>
               <textarea
                 rows={2}
                 value={signoffComments}
@@ -964,14 +964,14 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                 onClick={() => setIsReconciling(false)}
                 className="px-4 py-2 text-xs text-slate-400 hover:text-white"
               >
-                Cancel
+                {t('action.cancel', 'Cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 text-white text-xs font-semibold rounded-xl cursor-pointer shadow-lg shadow-amber-600/30"
               >
-                {isSubmitting ? 'Recording receipt...' : 'Confirm Delivery & Submit Sign-Off'}
+                {isSubmitting ? t('auth.submitting', 'Recording receipt...') : t('recon.record_receipt', 'Confirm Delivery & Submit Sign-Off')}
               </button>
             </div>
           </form>

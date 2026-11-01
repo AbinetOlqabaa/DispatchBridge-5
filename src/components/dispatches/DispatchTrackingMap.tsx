@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { Dispatch, RouteWaypoint } from '../../types/dispatch.js';
 import { api } from '../../services/api.js';
+import { useTranslation } from '../../context/LanguageContext.js';
 import {
   saveMapCache,
   getMapCache,
@@ -71,6 +72,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
   dispatch,
   onTelemetryUpdate,
 }) => {
+  const { t } = useTranslation();
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [activeWaypointTooltip, setActiveWaypointTooltip] = useState<RouteWaypoint | null>(null);
@@ -502,7 +504,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
             title="Pre-cache map tiles, waypoints and vector paths for offline transit"
           >
             <Database className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Pre-cache Route</span>
+            <span>{t('map.precache')}</span>
           </button>
 
           {/* Simulate Ping Button */}
@@ -514,7 +516,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
               title="Record next live GPS telemetry waypoint"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isSimulatingPing ? 'animate-spin' : ''}`} />
-              <span>{isSimulatingPing ? 'Pinging...' : 'Simulate GPS Ping'}</span>
+              <span>{isSimulatingPing ? t('map.pinging') : t('map.simulate_ping')}</span>
             </button>
           )}
 
@@ -527,12 +529,12 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
             {copiedCoords ? (
               <>
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400">Copied</span>
+                <span className="text-emerald-400">{t('action.copied')}</span>
               </>
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5 text-slate-400" />
-                <span>Copy Lat/Lng</span>
+                <span>{t('map.copy_coords')}</span>
               </>
             )}
           </button>
@@ -546,7 +548,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
             title="View exact geo-coordinates on Google Maps"
           >
             <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Open in Maps</span>
+            <span>{t('map.open_in_maps')}</span>
           </a>
         </div>
       </div>
@@ -564,7 +566,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
         {/* Layer Toggles */}
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1">
-            <Layers className="w-3 h-3 text-slate-400" /> Polyline Layers:
+            <Layers className="w-3 h-3 text-slate-400" /> {t('map.polyline_layers')}
           </span>
 
           {/* Toggle Planned Polyline */}
@@ -577,7 +579,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
             }`}
           >
             <span className="w-3 h-0.5 bg-indigo-400 inline-block border-b border-dashed border-indigo-300" />
-            <span>Planned Corridor ({plannedWaypoints.length} pts)</span>
+            <span>{t('map.planned_corridor', { count: plannedWaypoints.length })}</span>
           </button>
 
           {/* Toggle Actual Polyline */}
@@ -590,7 +592,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
             }`}
           >
             <span className="w-3 h-1 bg-cyan-400 inline-block rounded-full shadow" />
-            <span>Actual Route ({actualWaypoints.length} recorded)</span>
+            <span>{t('map.actual_route', { count: actualWaypoints.length })}</span>
           </button>
 
           {/* Toggle Breadcrumbs */}
@@ -603,16 +605,16 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
             }`}
           >
             <History className="w-3 h-3 text-sky-400" />
-            <span>Waypoints</span>
+            <span>{t('map.waypoints')}</span>
           </button>
         </div>
 
         {/* Corridor Variance Indicator */}
         <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
-          <span className="text-slate-500">Corridor Variance:</span>
+          <span className="text-slate-500">{t('map.corridor_variance')}</span>
           <span className="text-emerald-400 font-semibold">{corridorVarianceKm.toFixed(1)} km</span>
           <span className="text-slate-500">•</span>
-          <span className="text-slate-300">98.4% Adherence</span>
+          <span className="text-slate-300">{t('map.adherence')}</span>
         </div>
       </div>
 
@@ -876,7 +878,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
             <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1">
               <span className="font-semibold text-sky-300 flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-sky-400" />
-                Waypoint Inspection
+                {t('map.waypoint_inspection')}
               </span>
               <button
                 onClick={() => setActiveWaypointTooltip(null)}
@@ -891,12 +893,12 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
             </div>
             {activeWaypointTooltip.speedKmh !== undefined && (
               <div className="text-[11px] text-slate-400">
-                Speed: <span className="text-amber-400 font-mono">{activeWaypointTooltip.speedKmh} km/h</span>
+                {t('map.speed')}: <span className="text-amber-400 font-mono">{activeWaypointTooltip.speedKmh} km/h</span>
               </div>
             )}
             {activeWaypointTooltip.timestamp && (
               <div className="text-[10px] text-slate-500">
-                Timestamp: {new Date(activeWaypointTooltip.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {t('system.timestamp')}: {new Date(activeWaypointTooltip.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
             )}
           </div>
@@ -907,21 +909,21 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
           <button
             onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.35))}
             className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 shadow-md cursor-pointer transition-colors"
-            title="Zoom In"
+            title={t('map.zoom_in')}
           >
             <ZoomIn className="w-4 h-4" />
           </button>
           <button
             onClick={() => setZoomLevel((z) => Math.max(0.75, z - 0.35))}
             className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 shadow-md cursor-pointer transition-colors"
-            title="Zoom Out"
+            title={t('map.zoom_out')}
           >
             <ZoomOut className="w-4 h-4" />
           </button>
           <button
             onClick={() => setZoomLevel(1)}
             className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 shadow-md cursor-pointer transition-colors"
-            title="Reset to Fit Route Bounds"
+            title={t('map.fit_bounds')}
           >
             <Maximize2 className="w-4 h-4" />
           </button>
@@ -937,7 +939,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
               </span>
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-400 bg-sky-950 px-2 py-0.5 rounded-full border border-sky-800">
-              {progressPercentage}% Completed
+              {t('map.completed_progress', { progress: progressPercentage })}
             </span>
           </div>
 
@@ -945,7 +947,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             <div>
               <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-sky-400" /> Latitude
+                <MapPin className="w-3 h-3 text-sky-400" /> {t('map.latitude')}
               </div>
               <div className="font-mono font-semibold text-slate-200">
                 {currentCoords.lat.toFixed(5)}° N
@@ -954,7 +956,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
 
             <div>
               <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-sky-400" /> Longitude
+                <MapPin className="w-3 h-3 text-sky-400" /> {t('map.longitude')}
               </div>
               <div className="font-mono font-semibold text-slate-200">
                 {Math.abs(currentCoords.lng).toFixed(5)}° W
@@ -963,7 +965,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
 
             <div>
               <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                <Gauge className="w-3 h-3 text-amber-400" /> Speed
+                <Gauge className="w-3 h-3 text-amber-400" /> {t('map.speed')}
               </div>
               <div className="font-mono font-semibold text-slate-200">
                 {currentCoords.speedKmh} km/h
@@ -972,7 +974,7 @@ export const DispatchTrackingMap: React.FC<DispatchTrackingMapProps> = ({
 
             <div>
               <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                <Compass className="w-3 h-3 text-indigo-400" /> Heading
+                <Compass className="w-3 h-3 text-indigo-400" /> {t('map.heading')}
               </div>
               <div className="font-mono font-semibold text-slate-200">
                 {headingToCardinal(currentCoords.heading)}

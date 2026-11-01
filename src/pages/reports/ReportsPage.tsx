@@ -307,20 +307,20 @@ export function ReportsPage() {
                 {reportData.summary.totalLostVolume.toLocaleString()} <span className="text-xs font-normal text-slate-400">{t('unit.units')}</span>
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                {reportData.summary.discrepancyDispatches} discrepancy incidents
+                {reportData.summary.discrepancyDispatches} {t('status.discrepancy_review', 'incidents')}
               </p>
             </div>
 
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
               <div className="flex items-center justify-between text-slate-400 text-xs">
-                <span>Dispatched Value</span>
+                <span>{t('metric.total_value_transit', 'Dispatched Value')}</span>
                 <DollarSign className="w-4 h-4 text-indigo-400" />
               </div>
               <p className="text-2xl font-bold text-indigo-300 mt-1">
                 ${reportData.summary.totalCargoValue.toLocaleString()}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                {reportData.summary.totalDispatchedVolume.toLocaleString()} units shipped
+                {reportData.summary.totalDispatchedVolume.toLocaleString()} {t('unit.units', 'units')}
               </p>
             </div>
           </div>
@@ -330,52 +330,52 @@ export function ReportsPage() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
-                <h2 className="text-sm font-bold text-white">Loss & Discrepancy Root Causes</h2>
+                <h2 className="text-sm font-bold text-white">{t('analytics.tab_root_cause', 'Loss & Discrepancy Root Causes')}</h2>
               </div>
               <span className="text-[11px] text-slate-400">
-                Discrepancy Rate: <strong className="text-amber-400">{reportData.summary.discrepancyRate}%</strong>
+                {t('metric.reconciliation_rate', 'Discrepancy Rate')}: <strong className="text-amber-400">{reportData.summary.discrepancyRate}%</strong>
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl">
-                <span className="text-[11px] text-slate-400 block">Shortage</span>
+                <span className="text-[11px] text-slate-400 block">{t('discrepancy.shortage', 'Shortage')}</span>
                 <span className="text-lg font-bold text-white mt-0.5 block">
-                  {reportData.discrepancyBreakdown.shortage} <span className="text-xs text-slate-500">units</span>
+                  {reportData.discrepancyBreakdown.shortage} <span className="text-xs text-slate-500">{t('unit.units', 'units')}</span>
                 </span>
-                <span className="text-[10px] text-slate-500">Missing at dock</span>
+                <span className="text-[10px] text-slate-500">{t('discrepancy.shortage')}</span>
               </div>
 
               <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl">
-                <span className="text-[11px] text-slate-400 block">Transit Damage</span>
+                <span className="text-[11px] text-slate-400 block">{t('discrepancy.damaged', 'Transit Damage')}</span>
                 <span className="text-lg font-bold text-red-400 mt-0.5 block">
-                  {reportData.discrepancyBreakdown.damaged} <span className="text-xs text-slate-500">units</span>
+                  {reportData.discrepancyBreakdown.damaged} <span className="text-xs text-slate-500">{t('unit.units', 'units')}</span>
                 </span>
-                <span className="text-[10px] text-slate-500">Forklift / crushed</span>
+                <span className="text-[10px] text-slate-500">{t('condition.damaged')}</span>
               </div>
 
               <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl">
-                <span className="text-[11px] text-slate-400 block">Declared Lost</span>
+                <span className="text-[11px] text-slate-400 block">{t('discrepancy.lost', 'Declared Lost')}</span>
                 <span className="text-lg font-bold text-amber-400 mt-0.5 block">
-                  {reportData.discrepancyBreakdown.lost} <span className="text-xs text-slate-500">units</span>
+                  {reportData.discrepancyBreakdown.lost} <span className="text-xs text-slate-500">{t('unit.units', 'units')}</span>
                 </span>
-                <span className="text-[10px] text-slate-500">Vanished in route</span>
+                <span className="text-[10px] text-slate-500">{t('discrepancy.lost')}</span>
               </div>
 
               <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl">
-                <span className="text-[11px] text-slate-400 block">Overage</span>
+                <span className="text-[11px] text-slate-400 block">{t('discrepancy.overage', 'Overage')}</span>
                 <span className="text-lg font-bold text-blue-400 mt-0.5 block">
-                  {reportData.discrepancyBreakdown.overage} <span className="text-xs text-slate-500">units</span>
+                  {reportData.discrepancyBreakdown.overage} <span className="text-xs text-slate-500">{t('unit.units', 'units')}</span>
                 </span>
-                <span className="text-[10px] text-slate-500">Extra count arrived</span>
+                <span className="text-[10px] text-slate-500">{t('discrepancy.overage')}</span>
               </div>
 
               <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl">
-                <span className="text-[11px] text-slate-400 block">Count Mismatch</span>
+                <span className="text-[11px] text-slate-400 block">{t('discrepancy.count_mismatch', 'Count Mismatch')}</span>
                 <span className="text-lg font-bold text-purple-400 mt-0.5 block">
-                  {reportData.discrepancyBreakdown.countMismatch} <span className="text-xs text-slate-500">units</span>
+                  {reportData.discrepancyBreakdown.countMismatch} <span className="text-xs text-slate-500">{t('unit.units', 'units')}</span>
                 </span>
-                <span className="text-[10px] text-slate-500">SKU mix-up</span>
+                <span className="text-[10px] text-slate-500">{t('discrepancy.count_mismatch')}</span>
               </div>
             </div>
           </div>
@@ -385,10 +385,10 @@ export function ReportsPage() {
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-sm font-bold text-white">Partner Performance Scorecard</h2>
+                <h2 className="text-sm font-bold text-white">{t('metric.registered_partners', 'Partner Performance Scorecard')}</h2>
               </div>
               <span className="text-[11px] text-slate-400">
-                Sorted by delivery fulfillment volume
+                {t('metric.fulfilled_to_partner', 'Sorted by delivery fulfillment volume')}
               </span>
             </div>
 
@@ -396,12 +396,12 @@ export function ReportsPage() {
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-950/70 border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
-                    <th className="py-3 px-4 font-semibold">Partner Name</th>
-                    <th className="py-3 px-4 font-semibold">Total Dispatches</th>
-                    <th className="py-3 px-4 font-semibold">Completed Clean</th>
-                    <th className="py-3 px-4 font-semibold">Discrepancies</th>
-                    <th className="py-3 px-4 font-semibold">Success Rate</th>
-                    <th className="py-3 px-4 font-semibold text-right">Volume Handled</th>
+                    <th className="py-3 px-4 font-semibold">{t('table.partner_name', 'Partner Name')}</th>
+                    <th className="py-3 px-4 font-semibold">{t('table.dispatched', 'Total Dispatches')}</th>
+                    <th className="py-3 px-4 font-semibold">{t('table.intact', 'Completed Clean')}</th>
+                    <th className="py-3 px-4 font-semibold">{t('table.shortfall', 'Discrepancies')}</th>
+                    <th className="py-3 px-4 font-semibold">{t('metric.reconciliation_rate', 'Success Rate')}</th>
+                    <th className="py-3 px-4 font-semibold text-right">{t('table.items', 'Volume Handled')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
@@ -437,7 +437,7 @@ export function ReportsPage() {
                         </div>
                       </td>
                       <td className="py-3.5 px-4 text-right font-medium text-slate-200">
-                        {partner.totalVolume.toLocaleString()} units
+                        {partner.totalVolume.toLocaleString()} {t('unit.units', 'units')}
                       </td>
                     </tr>
                   ))}

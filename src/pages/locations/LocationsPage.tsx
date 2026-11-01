@@ -108,11 +108,11 @@ export const LocationsPage: React.FC = () => {
             <span className="text-xs font-semibold uppercase tracking-wider text-sky-400 bg-sky-950 px-2.5 py-0.5 rounded-full border border-sky-800">
               {t('nav.locations', 'Origins & Docks')}
             </span>
-            <span className="text-xs text-slate-400">{locations.length} terminal docks</span>
+            <span className="text-xs text-slate-400">{locations.length} {t('locations.terminal_docks', 'terminal docks')}</span>
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">{t('nav.locations', 'Origin Location Directory')}</h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Manage fulfillment centers, dispatch warehouses, and freight loading docks with geospatial coordinate tracking.
+            {t('locations.subtitle', 'Manage fulfillment centers, dispatch warehouses, and freight loading docks with geospatial coordinate tracking.')}
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export const LocationsPage: React.FC = () => {
               }`}
             >
               <MapIcon className="w-3.5 h-3.5" />
-              <span>Map View</span>
+              <span>{t('locations.map_view', 'Map View')}</span>
             </button>
             <button
               onClick={() => setViewMode('grid')}
@@ -139,7 +139,7 @@ export const LocationsPage: React.FC = () => {
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Grid View</span>
+              <span>{t('locations.grid_view', 'Grid View')}</span>
             </button>
           </div>
 
@@ -169,7 +169,7 @@ export const LocationsPage: React.FC = () => {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <Warehouse className="w-4 h-4 text-sky-400" />
-            <span>Registered Dispatch Origins ({locations.length})</span>
+            <span>{t('locations.registered_origins', { count: locations.length })}</span>
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -185,7 +185,7 @@ export const LocationsPage: React.FC = () => {
               </div>
               {loc.isDefault && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                  Default Origin
+                  {t('locations.default_origin', 'Default Origin')}
                 </span>
               )}
             </div>

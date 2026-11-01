@@ -158,7 +158,7 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
                 className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer mt-3"
               >
                 <Truck className="w-3.5 h-3.5 text-sky-400" />
-                <span>Create Dispatch to Partner</span>
+                <span>{t('rec.quick_dispatch', 'Create Dispatch to Partner')}</span>
               </button>
             )}
           </div>
@@ -169,7 +169,7 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 text-slate-100 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-white">Add New Receiving Partner</h3>
+            <h3 className="text-base font-bold text-white">{t('action.add_partner', 'Add New Receiving Partner')}</h3>
 
             {errorMessage && (
               <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
@@ -180,7 +180,7 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
 
             <form onSubmit={handleCreatePartner} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Company / Branch Name *</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t('auth.biz_legal_name', 'Company / Branch Name')} *</label>
                 <input
                   type="text"
                   required
@@ -192,7 +192,7 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Partner Type</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t('table.type', 'Partner Type')}</label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as any)}
@@ -207,7 +207,7 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Contact Person *</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t('table.contact', 'Contact Person')} *</label>
                 <input
                   type="text"
                   required
@@ -220,7 +220,7 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Email *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">{t('auth.email_address', 'Email')} *</label>
                   <input
                     type="email"
                     required
@@ -231,7 +231,7 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Phone *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">{t('auth.mobile_phone', 'Phone')} *</label>
                   <input
                     type="tel"
                     required
@@ -244,7 +244,7 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Delivery Dock Address *</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t('table.address', 'Delivery Dock Address')} *</label>
                 <textarea
                   required
                   rows={2}
@@ -261,14 +261,14 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
                   onClick={() => setShowAddModal(false)}
                   className="px-3 py-2 text-slate-400 hover:text-white"
                 >
-                  Cancel
+                  {t('action.cancel', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl"
                 >
-                  {isSubmitting ? 'Saving...' : 'Register Partner'}
+                  {isSubmitting ? t('auth.submitting', 'Saving...') : t('auth.complete_enrollment', 'Register Partner')}
                 </button>
               </div>
             </form>

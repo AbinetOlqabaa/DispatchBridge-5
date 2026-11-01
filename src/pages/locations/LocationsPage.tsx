@@ -11,6 +11,7 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
+import { useTranslation } from '../../context/LanguageContext.js';
 import { Location, Partner, Dispatch } from '../../types/dispatch.js';
 import { api } from '../../services/api.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
@@ -18,6 +19,7 @@ import { LocationsMapView } from '../../components/locations/LocationsMapView.js
 
 export const LocationsPage: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [locations, setLocations] = useState<Location[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
@@ -104,11 +106,11 @@ export const LocationsPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-sky-400 bg-sky-950 px-2.5 py-0.5 rounded-full border border-sky-800">
-              Dispatch Origins & Logistics Network
+              {t('nav.locations', 'Origins & Docks')}
             </span>
             <span className="text-xs text-slate-400">{locations.length} terminal docks</span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Origin Location Directory</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{t('nav.locations', 'Origin Location Directory')}</h1>
           <p className="text-xs text-slate-400 mt-0.5">
             Manage fulfillment centers, dispatch warehouses, and freight loading docks with geospatial coordinate tracking.
           </p>
@@ -147,7 +149,7 @@ export const LocationsPage: React.FC = () => {
               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Origin Dock</span>
+              <span>{t('action.add_location', 'Add Origin Dock')}</span>
             </button>
           )}
         </div>

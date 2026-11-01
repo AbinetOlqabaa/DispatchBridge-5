@@ -7,6 +7,7 @@ import {
   DispatchLine,
   DispatchStatus,
   ItemCondition,
+  Invitation,
   Location,
   Membership,
   NotificationItem,
@@ -27,6 +28,16 @@ import {
   verifySessionToken,
 } from '../security.js';
 import { AuthSession, IAuthAdapter, IDatabaseAdapter, INotificationAdapter } from '../types.js';
+import {
+  faydaAdapter,
+  maskFan,
+  maskFin,
+  maskPhoneNumber,
+  validateFanFormat,
+  validateFinFormat,
+} from './faydaAdapter.js';
+import { otpAdapter } from './otpAdapter.js';
+import { normalizeToE164, isValidE164 } from '../../utils/phoneUtils.js';
 
 // Pre-seeded Businesses
 const businesses: Business[] = [
@@ -193,11 +204,21 @@ const users: Array<User & { passwordHash: string }> = [
     email: 'owner@apexsupply.com',
     passwordHash: 'Password123!',
     name: 'Eleanor Vance',
-    phoneNumber: '+1-555-019-2831',
+    fullName: 'Eleanor Vance',
+    phoneNumber: '+15550192831',
+    maskedPhone: '+1 555 •••• 31',
     phoneVerified: true,
+    phoneVerifiedAt: '2026-01-15T08:00:00.000Z',
     role: 'BUSINESS_OWNER',
     businessId: 'biz_apex_supply',
     businessName: 'Apex Supply Logistics',
+    fan: '1111222233334444',
+    fin: '111122223333',
+    maskedFan: '•••• •••• •••• 4444',
+    maskedFin: '•••• •••• 3333',
+    faydaStatus: 'SIMULATED_VERIFIED',
+    faydaVerifiedAt: '2026-01-15T08:00:00.000Z',
+    faydaVerificationMethod: 'FAYDA_DEV_SIMULATOR',
     status: 'ACTIVE',
     memberships: [
       {
@@ -228,11 +249,21 @@ const users: Array<User & { passwordHash: string }> = [
     email: 'dispatcher@apexsupply.com',
     passwordHash: 'Password123!',
     name: 'Carlos Ruiz',
-    phoneNumber: '+1-555-019-5572',
+    fullName: 'Carlos Ruiz',
+    phoneNumber: '+15550195572',
+    maskedPhone: '+1 555 •••• 72',
     phoneVerified: true,
+    phoneVerifiedAt: '2026-02-01T08:30:00.000Z',
     role: 'SENDER',
     businessId: 'biz_apex_supply',
     businessName: 'Apex Supply Logistics',
+    fan: '2222333344445555',
+    fin: '222233334444',
+    maskedFan: '•••• •••• •••• 5555',
+    maskedFin: '•••• •••• 4444',
+    faydaStatus: 'SIMULATED_VERIFIED',
+    faydaVerifiedAt: '2026-02-01T08:30:00.000Z',
+    faydaVerificationMethod: 'FAYDA_DEV_SIMULATOR',
     status: 'ACTIVE',
     memberships: [
       {
@@ -254,12 +285,22 @@ const users: Array<User & { passwordHash: string }> = [
     email: 'store@metroretail.com',
     passwordHash: 'Password123!',
     name: 'David Miller',
-    phoneNumber: '+1-555-014-4411',
+    fullName: 'David Miller',
+    phoneNumber: '+15550144411',
+    maskedPhone: '+1 555 •••• 11',
     phoneVerified: true,
+    phoneVerifiedAt: '2026-02-11T10:00:00.000Z',
     role: 'RECEIVER',
     businessId: 'biz_metro_retail',
     businessName: 'Metro Retail Distribution',
     partnerId: 'part_metro_north',
+    fan: '3333444455556666',
+    fin: '333344445555',
+    maskedFan: '•••• •••• •••• 6666',
+    maskedFin: '•••• •••• 5555',
+    faydaStatus: 'SIMULATED_VERIFIED',
+    faydaVerifiedAt: '2026-02-11T10:00:00.000Z',
+    faydaVerificationMethod: 'FAYDA_DEV_SIMULATOR',
     status: 'ACTIVE',
     memberships: [
       {
@@ -281,11 +322,21 @@ const users: Array<User & { passwordHash: string }> = [
     email: 'admin@dispatchbridge.internal',
     passwordHash: 'Password123!',
     name: 'System Administrator (Initial Seed)',
-    phoneNumber: '+1-555-010-0001',
+    fullName: 'System Administrator (Initial Seed)',
+    phoneNumber: '+15550100001',
+    maskedPhone: '+1 555 •••• 01',
     phoneVerified: true,
+    phoneVerifiedAt: '2026-01-01T00:00:00.000Z',
     role: 'SUPER_ADMIN',
     businessId: 'biz_platform',
     businessName: 'DispatchBridge Platform Engine',
+    fan: '9999888877776666',
+    fin: '999988887777',
+    maskedFan: '•••• •••• •••• 6666',
+    maskedFin: '•••• •••• 7777',
+    faydaStatus: 'SIMULATED_VERIFIED',
+    faydaVerifiedAt: '2026-01-01T00:00:00.000Z',
+    faydaVerificationMethod: 'FAYDA_DEV_SIMULATOR',
     status: 'ACTIVE',
     memberships: [
       {
@@ -765,27 +816,55 @@ const auditLogs: AuditLogEntry[] = [
 // Idempotency keys store
 const idempotencyStore = new Map<string, any>();
 
+// In-memory Team Invitations store
+const invitations: Invitation[] = [
+  {
+    id: 'inv_001',
+    businessId: 'biz_apex_supply',
+    businessName: 'Apex Supply Logistics',
+    inviteeEmail: 'sarah.logistics@apexsupply.com',
+    inviteePhone: '+1-555-019-8833',
+    proposedRole: 'SENDER',
+    token: 'inv_tok_apex_sample_8833',
+    status: 'PENDING',
+    invitedByUserId: 'usr_business_owner',
+    invitedByName: 'Eleanor Vance',
+    createdAt: '2026-10-20T10:00:00.000Z',
+    expiresAt: '2026-11-20T10:00:00.000Z',
+  },
+];
+
 export class SandboxStore implements IAuthAdapter, IDatabaseAdapter, INotificationAdapter {
   readonly isMock = true;
   readonly providerName = 'Sandbox In-Memory / Dev State';
 
   // --- Auth Adapter ---
-  async login(email: string, password: string): Promise<AuthSession> {
-    const userRecord = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (!userRecord) {
-      throw new Error('Invalid email or password.');
+  async login(emailOrPhone: string, password: string): Promise<AuthSession> {
+    const input = emailOrPhone.trim();
+    let userRecord: (User & { passwordHash: string }) | undefined;
+
+    if (input.includes('@')) {
+      userRecord = users.find((u) => u.email.toLowerCase() === input.toLowerCase());
+    } else {
+      const normalized = normalizeToE164(input);
+      const digitsOnly = input.replace(/\D/g, '');
+      userRecord = users.find((u) => {
+        if (u.phoneNumber === normalized) return true;
+        if (u.phoneNumber.replace(/\D/g, '') === digitsOnly) return true;
+        return false;
+      });
     }
 
-    if (userRecord.passwordHash !== password) {
-      throw new Error('Invalid email or password.');
+    if (!userRecord || userRecord.passwordHash !== password) {
+      throw new Error('Invalid email, mobile number, or password.');
     }
 
     if (userRecord.status === 'SUSPENDED') {
-      throw new Error('Account suspended. Please contact platform administrator.');
+      throw new Error(userRecord.suspendedReason ? `Account suspended: ${userRecord.suspendedReason}` : 'Account suspended. Please contact platform administrator.');
     }
 
     userRecord.lastLoginAt = new Date().toISOString();
-    const { passwordHash, ...safeUser } = userRecord;
+    const { passwordHash, fan, fin, ...safeUser } = userRecord;
     const token = createSessionToken(safeUser.id, safeUser.role);
 
     await this.recordAudit({
@@ -796,7 +875,7 @@ export class SandboxStore implements IAuthAdapter, IDatabaseAdapter, INotificati
       action: 'USER_LOGIN',
       entityType: 'USER',
       entityId: safeUser.id,
-      details: `User ${safeUser.email} authenticated successfully.`,
+      details: `User ${safeUser.maskedPhone || safeUser.email} authenticated successfully.`,
     });
 
     return {
@@ -804,6 +883,682 @@ export class SandboxStore implements IAuthAdapter, IDatabaseAdapter, INotificati
       user: safeUser,
       expiresAt: Date.now() + 1000 * 60 * 60 * 24 * 7,
     };
+  }
+
+  async loginWithMobile(phoneNumber: string, password: string): Promise<AuthSession> {
+    const normalized = normalizeToE164(phoneNumber);
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+
+    const userRecord = users.find((u) => {
+      if (u.phoneNumber === normalized) return true;
+      if (u.phoneNumber.replace(/\D/g, '') === digitsOnly) return true;
+      return false;
+    });
+
+    if (!userRecord || userRecord.passwordHash !== password) {
+      throw new Error('Invalid mobile number or password.');
+    }
+
+    if (userRecord.status === 'SUSPENDED') {
+      throw new Error(userRecord.suspendedReason ? `Account suspended: ${userRecord.suspendedReason}` : 'Account suspended. Please contact platform administrator.');
+    }
+
+    userRecord.lastLoginAt = new Date().toISOString();
+    const { passwordHash, fan, fin, ...safeUser } = userRecord;
+    const token = createSessionToken(safeUser.id, safeUser.role);
+
+    await this.recordAudit({
+      actorId: safeUser.id,
+      actorName: safeUser.name,
+      actorRole: safeUser.role,
+      businessId: safeUser.businessId,
+      action: 'USER_LOGIN',
+      entityType: 'USER',
+      entityId: safeUser.id,
+      details: `User ${maskPhoneNumber(safeUser.phoneNumber)} authenticated via mobile number.`,
+    });
+
+    return {
+      token,
+      user: safeUser,
+      expiresAt: Date.now() + 1000 * 60 * 60 * 24 * 7,
+    };
+  }
+
+  async initiateRegistration(payload: {
+    role: UserRole;
+    name: string;
+    phoneNumber: string;
+    countryDialCode?: string;
+    fan: string;
+    fin: string;
+    businessName: string;
+    password: string;
+    email?: string;
+    partnerId?: string;
+  }): Promise<{
+    challengeId: string;
+    expiresInSeconds: number;
+    resendAvailableAt: number;
+    isSimulation: boolean;
+    simulatedCode?: string;
+    maskedPhone: string;
+    maskedFan: string;
+    maskedFin: string;
+  }> {
+    // 1. Strict Server-Side Role Enforcement
+    if (payload.role === 'SUPER_ADMIN') {
+      throw new Error('Public registration as Super Administrator is strictly prohibited.');
+    }
+    const allowedRoles: UserRole[] = ['BUSINESS_OWNER', 'SENDER', 'RECEIVER'];
+    if (!allowedRoles.includes(payload.role)) {
+      throw new Error('Public registration allows BUSINESS_OWNER, SENDER, or RECEIVER roles only.');
+    }
+
+    // 2. Validate FAN & FIN Formats
+    const fanCheck = validateFanFormat(payload.fan);
+    if (!fanCheck.valid) {
+      throw new Error(fanCheck.error);
+    }
+    const finCheck = validateFinFormat(payload.fin);
+    if (!finCheck.valid) {
+      throw new Error(finCheck.error);
+    }
+
+    // 3. Normalize & Validate E.164 Mobile Phone
+    const normalizedPhone = normalizeToE164(payload.phoneNumber, payload.countryDialCode || '+251');
+    if (!isValidE164(normalizedPhone)) {
+      throw new Error('Invalid mobile phone number. Please provide a valid number in E.164 format.');
+    }
+
+    // 4. Validate Password Length
+    if (!payload.password || payload.password.length < 8) {
+      throw new Error('Password must be at least 8 characters long.');
+    }
+
+    if (!payload.name || !payload.businessName) {
+      throw new Error('Full Name and Business Name are required.');
+    }
+
+    // 5. Atomic Uniqueness Constraints
+    const cleanFan = payload.fan.trim();
+    const cleanFin = payload.fin.trim();
+    const phoneDigits = normalizedPhone.replace(/\D/g, '');
+
+    const phoneExists = users.some((u) => u.phoneNumber === normalizedPhone || u.phoneNumber.replace(/\D/g, '') === phoneDigits);
+    if (phoneExists) {
+      throw new Error('This mobile phone number is already registered or cannot be linked.');
+    }
+
+    const fanExists = users.some((u) => u.fan === cleanFan);
+    if (fanExists) {
+      throw new Error('An account linked to this FAN (Fayda Account Number) already exists.');
+    }
+
+    const finExists = users.some((u) => u.fin === cleanFin);
+    if (finExists) {
+      throw new Error('An account linked to this FIN (Fayda Identification Number) already exists.');
+    }
+
+    // 6. Invoke Fayda e-ID Verification Gateway
+    const faydaRes = await faydaAdapter.verifyIdentity({
+      fan: cleanFan,
+      fin: cleanFin,
+      fullName: payload.name.trim(),
+      phoneNumber: normalizedPhone,
+    });
+
+    if (!faydaRes.verified) {
+      throw new Error(faydaRes.error || 'Fayda national identity verification could not be completed.');
+    }
+
+    // 7. Dispatch Purpose-Bound OTP Challenge
+    const challenge = await otpAdapter.createChallenge(normalizedPhone, 'REGISTRATION', {
+      ...payload,
+      fan: cleanFan,
+      fin: cleanFin,
+      normalizedPhone,
+      faydaRes,
+    });
+
+    return {
+      challengeId: challenge.challengeId,
+      expiresInSeconds: challenge.expiresInSeconds,
+      resendAvailableAt: challenge.resendAvailableAt,
+      isSimulation: challenge.isSimulation,
+      simulatedCode: challenge.simulatedCode,
+      maskedPhone: maskPhoneNumber(normalizedPhone),
+      maskedFan: maskFan(cleanFan),
+      maskedFin: maskFin(cleanFin),
+    };
+  }
+
+  async completeRegistration(challengeId: string, otpCode: string): Promise<AuthSession> {
+    const otpRes = await otpAdapter.verifyCode(challengeId, otpCode);
+    if (!otpRes.success) {
+      throw new Error(otpRes.error || 'Invalid OTP code.');
+    }
+
+    const payload = otpRes.payload;
+    if (!payload) {
+      throw new Error('Registration payload not found in verified challenge.');
+    }
+
+    // Re-verify uniqueness constraints in transaction
+    const phoneExists = users.some((u) => u.phoneNumber === payload.normalizedPhone);
+    if (phoneExists) {
+      throw new Error('This mobile phone number is already registered.');
+    }
+    const fanExists = users.some((u) => u.fan === payload.fan);
+    if (fanExists) {
+      throw new Error('An account linked to this FAN already exists.');
+    }
+
+    const newUserId = 'usr_' + crypto.randomBytes(6).toString('hex');
+    const newBusinessId = 'biz_' + crypto.randomBytes(4).toString('hex');
+
+    const newBusiness: Business = {
+      id: newBusinessId,
+      name: payload.businessName.trim(),
+      countryCode: 'ET',
+      contactEmail: payload.email || `${newUserId}@dispatchbridge.local`,
+      contactPhone: payload.normalizedPhone,
+      address: 'Registered Commercial Facility',
+      status: 'ACTIVE',
+      ownerUserIds: [newUserId],
+      createdAt: new Date().toISOString(),
+    };
+    businesses.push(newBusiness);
+
+    // Create default origin location for newly formed business entity
+    locations.push({
+      id: 'loc_' + crypto.randomBytes(4).toString('hex'),
+      businessId: newBusinessId,
+      label: 'Main Commercial Terminal',
+      addressLines: 'Terminal Bay 1',
+      city: 'Addis Ababa',
+      region: 'Addis Ababa',
+      countryCode: 'ET',
+      isDefault: true,
+      latitude: 9.0192,
+      longitude: 38.7525,
+      createdAt: new Date().toISOString(),
+    });
+
+    const newUserRecord: User & { passwordHash: string } = {
+      id: newUserId,
+      email: payload.email || `${newUserId}@dispatchbridge.local`,
+      passwordHash: payload.password,
+      name: payload.name.trim(),
+      fullName: payload.name.trim(),
+      phoneNumber: payload.normalizedPhone,
+      maskedPhone: maskPhoneNumber(payload.normalizedPhone),
+      phoneVerified: true,
+      phoneVerifiedAt: new Date().toISOString(),
+      fan: payload.fan,
+      fin: payload.fin,
+      maskedFan: maskFan(payload.fan),
+      maskedFin: maskFin(payload.fin),
+      faydaStatus: payload.faydaRes?.isSimulation ? 'SIMULATED_VERIFIED' : 'VERIFIED',
+      faydaVerifiedAt: new Date().toISOString(),
+      faydaVerificationMethod: payload.faydaRes?.verificationMethod || 'FAYDA_DEV_SIMULATOR',
+      role: payload.role,
+      businessId: newBusinessId,
+      businessName: payload.businessName.trim(),
+      partnerId: payload.partnerId,
+      status: 'ACTIVE',
+      memberships: [
+        {
+          id: 'mem_' + crypto.randomBytes(4).toString('hex'),
+          userId: newUserId,
+          businessId: newBusinessId,
+          businessName: payload.businessName.trim(),
+          role: payload.role,
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+    };
+
+    users.push(newUserRecord);
+
+    const { passwordHash, fan, fin, ...safeUser } = newUserRecord;
+    const token = createSessionToken(safeUser.id, safeUser.role);
+
+    await this.recordAudit({
+      actorId: safeUser.id,
+      actorName: safeUser.name,
+      actorRole: safeUser.role,
+      businessId: safeUser.businessId,
+      action: 'USER_REGISTERED',
+      entityType: 'USER',
+      entityId: safeUser.id,
+      details: `User registered with verified mobile ${maskPhoneNumber(safeUser.phoneNumber)} and Fayda e-ID ${maskFan(newUserRecord.fan!)}.`,
+    });
+
+    return {
+      token,
+      user: safeUser,
+      expiresAt: Date.now() + 1000 * 60 * 60 * 24 * 7,
+    };
+  }
+
+  async initiatePasswordReset(
+    phoneOrData: string | { phoneNumber: string; fan: string; fin: string; countryDialCode?: string },
+    maybeFan?: string,
+    maybeFin?: string,
+    maybeCountryDialCode?: string
+  ): Promise<{
+    challengeId: string;
+    expiresInSeconds: number;
+    resendAvailableAt: number;
+    isSimulation: boolean;
+    simulatedCode?: string;
+    maskedPhone: string;
+  }> {
+    let phoneNumber: string;
+    let fan: string;
+    let fin: string;
+    let countryDialCode: string | undefined;
+
+    if (typeof phoneOrData === 'object' && phoneOrData !== null) {
+      phoneNumber = phoneOrData.phoneNumber;
+      fan = phoneOrData.fan;
+      fin = phoneOrData.fin;
+      countryDialCode = phoneOrData.countryDialCode;
+    } else {
+      phoneNumber = phoneOrData;
+      fan = maybeFan || '';
+      fin = maybeFin || '';
+      countryDialCode = maybeCountryDialCode;
+    }
+
+    const normalizedPhone = normalizeToE164(phoneNumber, countryDialCode || '+251');
+    const fanCheck = validateFanFormat(fan);
+    if (!fanCheck.valid) throw new Error(fanCheck.error);
+    const finCheck = validateFinFormat(fin);
+    if (!finCheck.valid) throw new Error(finCheck.error);
+
+    const cleanFan = fan.trim();
+    const cleanFin = fin.trim();
+    const phoneDigits = normalizedPhone.replace(/\D/g, '');
+
+    const user = users.find((u) => {
+      const matchPhone = u.phoneNumber === normalizedPhone || u.phoneNumber.replace(/\D/g, '') === phoneDigits;
+      const matchFan = u.fan === cleanFan;
+      const matchFin = u.fin === cleanFin;
+      return matchPhone && matchFan && matchFin;
+    });
+
+    if (!user) {
+      throw new Error('Identity verification failed. Please verify your mobile number, FAN, and FIN.');
+    }
+
+    if (user.status === 'SUSPENDED') {
+      throw new Error('This account has been suspended. Please contact platform administration.');
+    }
+
+    const challenge = await otpAdapter.createChallenge(normalizedPhone, 'PASSWORD_RESET', {
+      userId: user.id,
+    });
+
+    return {
+      challengeId: challenge.challengeId,
+      expiresInSeconds: challenge.expiresInSeconds,
+      resendAvailableAt: challenge.resendAvailableAt,
+      isSimulation: challenge.isSimulation,
+      simulatedCode: challenge.simulatedCode,
+      maskedPhone: maskPhoneNumber(normalizedPhone),
+    };
+  }
+
+  async completePasswordReset(
+    challengeId: string,
+    otpCode: string,
+    newPassword: string
+  ): Promise<{ success: boolean; message: string }> {
+    const otpRes = await otpAdapter.verifyCode(challengeId, otpCode);
+    if (!otpRes.success) {
+      throw new Error(otpRes.error || 'Invalid OTP code.');
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      throw new Error('New password must be at least 8 characters long.');
+    }
+
+    const userId = otpRes.payload?.userId;
+    const user = users.find((u) => u.id === userId);
+    if (!user) {
+      throw new Error('User account not found.');
+    }
+
+    user.passwordHash = newPassword;
+    user.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      businessId: user.businessId,
+      action: 'PASSWORD_RESET_COMPLETED',
+      entityType: 'USER',
+      entityId: user.id,
+      details: `Password recovered and reset via verified mobile OTP for ${maskPhoneNumber(user.phoneNumber)}.`,
+    });
+
+    return { success: true, message: 'Password reset successfully. You may now sign in.' };
+  }
+
+  async initiatePasswordChangeOtp(userId: string): Promise<{
+    challengeId: string;
+    expiresInSeconds: number;
+    resendAvailableAt: number;
+    isSimulation: boolean;
+    simulatedCode?: string;
+    maskedPhone: string;
+  }> {
+    const user = users.find((u) => u.id === userId);
+    if (!user) throw new Error('User not found.');
+
+    const challenge = await otpAdapter.createChallenge(user.phoneNumber, 'PROFILE_CHANGE', { userId });
+    return {
+      challengeId: challenge.challengeId,
+      expiresInSeconds: challenge.expiresInSeconds,
+      resendAvailableAt: challenge.resendAvailableAt,
+      isSimulation: challenge.isSimulation,
+      simulatedCode: challenge.simulatedCode,
+      maskedPhone: maskPhoneNumber(user.phoneNumber),
+    };
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    challengeId?: string,
+    otpCode?: string
+  ): Promise<{ success: boolean; message: string }> {
+    const user = users.find((u) => u.id === userId);
+    if (!user) throw new Error('User not found.');
+
+    if (user.passwordHash !== currentPassword) {
+      throw new Error('Current password is incorrect or does not match.');
+    }
+
+    if (challengeId && otpCode) {
+      const otpRes = await otpAdapter.verifyCode(challengeId, otpCode);
+      if (!otpRes.success) {
+        throw new Error(otpRes.error || 'Invalid step-up OTP code.');
+      }
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      throw new Error('New password must be at least 8 characters long.');
+    }
+
+    user.passwordHash = newPassword;
+    user.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      businessId: user.businessId,
+      action: 'PASSWORD_CHANGED',
+      entityType: 'USER',
+      entityId: user.id,
+      details: challengeId
+        ? `User password successfully updated with step-up OTP verification.`
+        : `User password updated successfully.`,
+    });
+
+    return { success: true, message: 'Password updated successfully.' };
+  }
+
+  async updateProfile(
+    userId: string,
+    data: { name?: string; phoneNumber?: string; avatarUrl?: string; avatarDataUri?: string }
+  ): Promise<User> {
+    const user = users.find((u) => u.id === userId);
+    if (!user) throw new Error('User not found.');
+
+    const avatar = data.avatarUrl || data.avatarDataUri;
+    if (avatar) {
+      // Validate image data URL or URL
+      if (
+        !avatar.startsWith('data:image/jpeg') &&
+        !avatar.startsWith('data:image/png') &&
+        !avatar.startsWith('data:image/webp') &&
+        !avatar.startsWith('http://') &&
+        !avatar.startsWith('https://')
+      ) {
+        throw new Error('Avatar must be a valid image (JPEG, PNG, or WebP).');
+      }
+      // Check approximate 2MB file limit (2.8MB base64 string)
+      if (avatar.length > 2800000) {
+        throw new Error('Avatar file exceeds maximum size limit of 2MB.');
+      }
+      user.avatarUrl = avatar;
+    }
+
+    if (data.name && data.name.trim().length > 0) {
+      user.name = data.name.trim();
+      user.fullName = data.name.trim();
+    }
+
+    if (data.phoneNumber && data.phoneNumber.trim().length > 0) {
+      const normalized = normalizeToE164(data.phoneNumber.trim());
+      if (normalized !== user.phoneNumber) {
+        user.phoneNumber = normalized;
+        user.maskedPhone = maskPhoneNumber(normalized);
+        user.phoneVerified = false;
+      }
+    }
+
+    user.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      businessId: user.businessId,
+      action: 'USER_PROFILE_UPDATED',
+      entityType: 'USER',
+      entityId: user.id,
+      details: `User updated profile information.`,
+    });
+
+    const { passwordHash, fan, fin, ...safeUser } = user;
+    return safeUser;
+  }
+
+  async removeProfilePhoto(userId: string): Promise<User> {
+    const user = users.find((u) => u.id === userId);
+    if (!user) throw new Error('User not found.');
+
+    delete user.avatarUrl;
+    user.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      businessId: user.businessId,
+      action: 'PROFILE_PHOTO_REMOVED',
+      entityType: 'USER',
+      entityId: user.id,
+      details: `User removed profile picture.`,
+    });
+
+    const { passwordHash, fan, fin, ...safeUser } = user;
+    return safeUser;
+  }
+
+  // --- Administrator User Management (SUPER_ADMIN only) ---
+  async adminGetUsers(params: {
+    search?: string;
+    role?: UserRole;
+    status?: 'ACTIVE' | 'SUSPENDED';
+    page?: number;
+    limit?: number;
+  } = {}): Promise<{
+    users: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    let safeList = users.map(({ passwordHash, fan, fin, ...safe }) => safe);
+
+    if (params.search) {
+      const q = params.search.toLowerCase().trim();
+      safeList = safeList.filter((u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.phoneNumber.toLowerCase().includes(q) ||
+        (u.maskedPhone && u.maskedPhone.toLowerCase().includes(q)) ||
+        (u.maskedFan && u.maskedFan.toLowerCase().includes(q)) ||
+        u.businessName.toLowerCase().includes(q)
+      );
+    }
+
+    if (params.role) {
+      safeList = safeList.filter((u) => u.role === params.role);
+    }
+
+    if (params.status) {
+      safeList = safeList.filter((u) => u.status === params.status);
+    }
+
+    const total = safeList.length;
+    const page = Math.max(1, params.page || 1);
+    const limit = Math.max(1, Math.min(50, params.limit || 10));
+    const totalPages = Math.ceil(total / limit) || 1;
+    const start = (page - 1) * limit;
+    const paginated = safeList.slice(start, start + limit);
+
+    return {
+      users: paginated,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
+
+  async adminSuspendUser(adminUserId: string, targetUserId: string, reason: string): Promise<User> {
+    const admin = users.find((u) => u.id === adminUserId);
+    if (!admin || admin.role !== 'SUPER_ADMIN') {
+      throw new Error('Forbidden: Only Super Administrators can suspend users.');
+    }
+
+    const target = users.find((u) => u.id === targetUserId);
+    if (!target) throw new Error('Target user not found.');
+
+    // Lockout Protection: Prevent suspending the last remaining Super-Admin
+    if (target.role === 'SUPER_ADMIN') {
+      const activeSuperAdmins = users.filter((u) => u.role === 'SUPER_ADMIN' && u.status === 'ACTIVE');
+      if (activeSuperAdmins.length <= 1) {
+        throw new Error('Cannot suspend or demote the last remaining active Super Administrator.');
+      }
+    }
+
+    target.status = 'SUSPENDED';
+    target.suspendedReason = reason.trim() || 'Suspended by platform administrator.';
+    target.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      actorId: admin.id,
+      actorName: admin.name,
+      actorRole: admin.role,
+      businessId: admin.businessId,
+      action: 'ADMIN_USER_SUSPENDED',
+      entityType: 'USER',
+      entityId: target.id,
+      details: `Administrator suspended user ${target.name} (${maskPhoneNumber(target.phoneNumber)}). Reason: ${target.suspendedReason}`,
+    });
+
+    const { passwordHash, fan, fin, ...safeUser } = target;
+    return safeUser;
+  }
+
+  async adminReactivateUser(adminUserId: string, targetUserId: string): Promise<User> {
+    const admin = users.find((u) => u.id === adminUserId);
+    if (!admin || admin.role !== 'SUPER_ADMIN') {
+      throw new Error('Forbidden: Only Super Administrators can reactivate users.');
+    }
+
+    const target = users.find((u) => u.id === targetUserId);
+    if (!target) throw new Error('Target user not found.');
+
+    target.status = 'ACTIVE';
+    delete target.suspendedReason;
+    target.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      actorId: admin.id,
+      actorName: admin.name,
+      actorRole: admin.role,
+      businessId: admin.businessId,
+      action: 'ADMIN_USER_REACTIVATED',
+      entityType: 'USER',
+      entityId: target.id,
+      details: `Administrator reactivated user ${target.name} (${maskPhoneNumber(target.phoneNumber)}).`,
+    });
+
+    const { passwordHash, fan, fin, ...safeUser } = target;
+    return safeUser;
+  }
+
+  async adminUpdateUserRole(
+    adminUserId: string,
+    targetUserId: string,
+    newRole: UserRole,
+    businessId?: string
+  ): Promise<User> {
+    const admin = users.find((u) => u.id === adminUserId);
+    if (!admin || admin.role !== 'SUPER_ADMIN') {
+      throw new Error('Forbidden: Only Super Administrators can manage user roles.');
+    }
+
+    const target = users.find((u) => u.id === targetUserId);
+    if (!target) throw new Error('Target user not found.');
+
+    // Lockout Protection: Prevent demoting the last remaining active Super-Admin
+    if (target.role === 'SUPER_ADMIN' && newRole !== 'SUPER_ADMIN') {
+      const activeSuperAdmins = users.filter((u) => u.role === 'SUPER_ADMIN' && u.status === 'ACTIVE');
+      if (activeSuperAdmins.length <= 1) {
+        throw new Error('Cannot suspend or demote the last remaining active Super Administrator.');
+      }
+    }
+
+    const prevRole = target.role;
+    target.role = newRole;
+    if (businessId) {
+      target.businessId = businessId;
+      const mem = target.memberships.find((m) => m.businessId === businessId);
+      if (mem) {
+        mem.role = newRole;
+      }
+    }
+    target.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      actorId: admin.id,
+      actorName: admin.name,
+      actorRole: admin.role,
+      businessId: admin.businessId,
+      action: 'ADMIN_USER_ROLE_CHANGED',
+      entityType: 'USER',
+      entityId: target.id,
+      details: `Administrator changed role for ${target.name} from ${prevRole} to ${newRole}.`,
+    });
+
+    const { passwordHash, fan, fin, ...safeUser } = target;
+    return safeUser;
   }
 
   async register(payload: {
@@ -815,6 +1570,10 @@ export class SandboxStore implements IAuthAdapter, IDatabaseAdapter, INotificati
     role: UserRole;
     partnerId?: string;
   }): Promise<AuthSession> {
+    if (payload.role === 'SUPER_ADMIN') {
+      throw new Error('Public registration as Super Administrator is strictly prohibited.');
+    }
+
     const normalizedEmail = payload.email.toLowerCase().trim();
     if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
       throw new Error('An account with this email address already exists.');
@@ -2415,6 +3174,328 @@ export class SandboxStore implements IAuthAdapter, IDatabaseAdapter, INotificati
       createdCount: created.length,
       dispatches: created,
       errors: errors.length > 0 ? errors : undefined,
+    };
+  }
+
+  // --- Team & Membership Management ---
+
+  async getBusinessMembers(businessId: string): Promise<Array<User & { membershipRole: UserRole; membershipStatus: string; membershipCreatedAt: string }>> {
+    const results: Array<User & { membershipRole: UserRole; membershipStatus: string; membershipCreatedAt: string }> = [];
+    for (const u of users) {
+      const mem = u.memberships?.find((m) => m.businessId === businessId && m.status !== 'SUSPENDED');
+      if (mem) {
+        const { passwordHash, fan, fin, ...safeUser } = u;
+        results.push({
+          ...safeUser,
+          membershipRole: mem.role,
+          membershipStatus: mem.status,
+          membershipCreatedAt: mem.createdAt,
+        });
+      }
+    }
+    return results;
+  }
+
+  async getBusinessInvitations(businessId: string): Promise<Invitation[]> {
+    return invitations.filter((inv) => inv.businessId === businessId && inv.status !== 'REVOKED');
+  }
+
+  async createInvitation(
+    data: { businessId: string; inviteeEmail: string; inviteePhone?: string; proposedRole: UserRole },
+    actor: User
+  ): Promise<Invitation> {
+    const biz = businesses.find((b) => b.id === data.businessId);
+    const bizName = biz?.name || actor.businessName || 'Business Organization';
+    const normEmail = data.inviteeEmail.toLowerCase().trim();
+
+    const token = 'inv_tok_' + crypto.randomBytes(16).toString('hex');
+    const newInvitation: Invitation = {
+      id: 'inv_' + crypto.randomBytes(6).toString('hex'),
+      businessId: data.businessId,
+      businessName: bizName,
+      inviteeEmail: normEmail,
+      inviteePhone: data.inviteePhone?.trim(),
+      proposedRole: data.proposedRole,
+      token,
+      status: 'PENDING',
+      invitedByUserId: actor.id,
+      invitedByName: actor.name,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+
+    invitations.push(newInvitation);
+
+    await this.recordAudit({
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
+      businessId: data.businessId,
+      action: 'TEAM_MEMBER_INVITED',
+      entityType: 'USER',
+      entityId: newInvitation.id,
+      details: `Invitation issued to ${normEmail} with proposed role ${data.proposedRole}.`,
+    });
+
+    return newInvitation;
+  }
+
+  async revokeInvitation(invitationId: string, actor: User): Promise<{ success: boolean; message: string }> {
+    const inv = invitations.find((i) => i.id === invitationId);
+    if (!inv) throw new Error('Invitation not found.');
+    if (inv.businessId !== actor.businessId && actor.role !== 'SUPER_ADMIN') {
+      throw new Error('Forbidden: Cannot revoke invitation for another business organization.');
+    }
+
+    inv.status = 'REVOKED';
+
+    await this.recordAudit({
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
+      businessId: actor.businessId,
+      action: 'TEAM_INVITATION_REVOKED',
+      entityType: 'USER',
+      entityId: inv.id,
+      details: `Invitation for ${inv.inviteeEmail} was revoked by ${actor.name}.`,
+    });
+
+    return { success: true, message: 'Invitation successfully revoked.' };
+  }
+
+  async acceptInvitation(token: string, actor: User): Promise<{ success: boolean; membership: Membership; user: User }> {
+    const inv = invitations.find((i) => i.token === token.trim());
+    if (!inv) throw new Error('Invalid or expired invitation token.');
+    if (inv.status !== 'PENDING') {
+      throw new Error(`Invitation is no longer active (Status: ${inv.status}).`);
+    }
+
+    const userRecord = users.find((u) => u.id === actor.id);
+    if (!userRecord) throw new Error('User not found.');
+
+    let existingMem = userRecord.memberships.find((m) => m.businessId === inv.businessId);
+    if (existingMem) {
+      existingMem.role = inv.proposedRole;
+      existingMem.status = 'ACTIVE';
+    } else {
+      existingMem = {
+        id: 'mem_' + crypto.randomBytes(6).toString('hex'),
+        userId: userRecord.id,
+        businessId: inv.businessId,
+        businessName: inv.businessName,
+        role: inv.proposedRole,
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString(),
+      };
+      userRecord.memberships.push(existingMem);
+    }
+
+    userRecord.businessId = inv.businessId;
+    userRecord.businessName = inv.businessName;
+    userRecord.role = inv.proposedRole;
+    userRecord.updatedAt = new Date().toISOString();
+
+    inv.status = 'ACCEPTED';
+
+    await this.recordAudit({
+      actorId: userRecord.id,
+      actorName: userRecord.name,
+      actorRole: userRecord.role,
+      businessId: inv.businessId,
+      action: 'TEAM_INVITATION_ACCEPTED',
+      entityType: 'USER',
+      entityId: existingMem.id,
+      details: `${userRecord.name} joined ${inv.businessName} as ${inv.proposedRole}.`,
+    });
+
+    const { passwordHash, fan, fin, ...safeUser } = userRecord;
+    return {
+      success: true,
+      membership: existingMem,
+      user: safeUser,
+    };
+  }
+
+  async updateMemberRole(businessId: string, targetUserId: string, newRole: UserRole, actor: User): Promise<User> {
+    if (actor.businessId !== businessId && actor.role !== 'SUPER_ADMIN') {
+      throw new Error('Forbidden: Cannot update members of another organization.');
+    }
+
+    const target = users.find((u) => u.id === targetUserId);
+    if (!target) throw new Error('Target user not found.');
+
+    const mem = target.memberships.find((m) => m.businessId === businessId);
+    if (!mem) throw new Error('User is not a member of this organization.');
+
+    const prevRole = mem.role;
+    mem.role = newRole;
+
+    if (target.businessId === businessId) {
+      target.role = newRole;
+    }
+    target.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
+      businessId,
+      action: 'TEAM_MEMBER_ROLE_UPDATED',
+      entityType: 'USER',
+      entityId: mem.id,
+      details: `Member ${target.name} role changed from ${prevRole} to ${newRole} by ${actor.name}.`,
+    });
+
+    const { passwordHash, fan, fin, ...safeUser } = target;
+    return safeUser;
+  }
+
+  async removeMember(businessId: string, targetUserId: string, actor: User): Promise<{ success: boolean; message: string }> {
+    if (actor.businessId !== businessId && actor.role !== 'SUPER_ADMIN') {
+      throw new Error('Forbidden: Cannot remove members from another organization.');
+    }
+
+    if (targetUserId === actor.id) {
+      throw new Error('Cannot remove yourself from your active organization.');
+    }
+
+    const target = users.find((u) => u.id === targetUserId);
+    if (!target) throw new Error('Target user not found.');
+
+    const memIndex = target.memberships.findIndex((m) => m.businessId === businessId);
+    if (memIndex === -1) throw new Error('User is not a member of this organization.');
+
+    target.memberships.splice(memIndex, 1);
+
+    if (target.businessId === businessId) {
+      if (target.memberships.length > 0) {
+        const fallback = target.memberships[0];
+        target.businessId = fallback.businessId;
+        target.businessName = fallback.businessName;
+        target.role = fallback.role;
+      }
+    }
+    target.updatedAt = new Date().toISOString();
+
+    await this.recordAudit({
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
+      businessId,
+      action: 'TEAM_MEMBER_REMOVED',
+      entityType: 'USER',
+      entityId: target.id,
+      details: `Member ${target.name} removed from organization by ${actor.name}.`,
+    });
+
+    return { success: true, message: 'Member successfully removed.' };
+  }
+
+  // --- Executive Reports & Performance Analytics ---
+
+  async getAnalyticsReport(businessId: string, _actor?: User): Promise<any> {
+    const bizDispatches = dispatches.filter(
+      (d) => d.senderBusinessId === businessId || d.destinationSnapshot?.partnerName?.includes(businessId)
+    );
+
+    const totalDispatches = bizDispatches.length;
+    const deliveredDispatches = bizDispatches.filter(
+      (d) => d.status === 'RECEIVED' || d.status === 'RECONCILED'
+    ).length;
+    const inTransitDispatches = bizDispatches.filter(
+      (d) => d.status === 'DISPATCHED' || d.status === 'IN_TRANSIT' || d.status === 'VIEWED'
+    ).length;
+    const discrepancyDispatches = bizDispatches.filter(
+      (d) => d.status === 'PARTIALLY_RECEIVED' || d.status === 'DISCREPANCY_REVIEW'
+    ).length;
+
+    const deliverySuccessRate = totalDispatches > 0 ? Math.round((deliveredDispatches / totalDispatches) * 100) : 100;
+    const discrepancyRate = totalDispatches > 0 ? Math.round((discrepancyDispatches / totalDispatches) * 100) : 0;
+
+    let totalDispatchedVolume = 0;
+    let totalReceivedVolume = 0;
+    let totalLostVolume = 0;
+    let totalCargoValue = 0;
+
+    let shortage = 0;
+    let damaged = 0;
+    let lost = 0;
+    let overage = 0;
+    let countMismatch = 0;
+
+    const partnerMap = new Map<string, {
+      partnerId: string;
+      partnerName: string;
+      totalDispatches: number;
+      deliveredCount: number;
+      discrepancyCount: number;
+      totalVolume: number;
+    }>();
+
+    for (const d of bizDispatches) {
+      totalDispatchedVolume += d.totalQuantityDispatched || 0;
+      totalReceivedVolume += d.totalQuantityReceived || 0;
+      totalLostVolume += d.totalQuantityLost || 0;
+
+      for (const l of d.lines) {
+        const price = l.unitPrice || 25;
+        totalCargoValue += (l.quantitySent || 0) * price;
+
+        if (l.discrepancyType === 'SHORTAGE') shortage += l.lossQty || 0;
+        else if (l.discrepancyType === 'DAMAGED') damaged += l.lossQty || 0;
+        else if (l.discrepancyType === 'LOST') lost += l.lossQty || 0;
+        else if (l.discrepancyType === 'OVERAGE') overage += Math.abs(l.lossQty || 0);
+        else if (l.discrepancyType === 'COUNT_MISMATCH') countMismatch += Math.abs(l.lossQty || 0);
+      }
+
+      const pId = d.partnerId || 'default_partner';
+      const pName = d.partnerName || d.destinationSnapshot?.partnerName || 'Key Delivery Partner';
+      const existing = partnerMap.get(pId) || {
+        partnerId: pId,
+        partnerName: pName,
+        totalDispatches: 0,
+        deliveredCount: 0,
+        discrepancyCount: 0,
+        totalVolume: 0,
+      };
+
+      existing.totalDispatches += 1;
+      existing.totalVolume += d.totalQuantityDispatched || 0;
+      if (d.status === 'RECEIVED' || d.status === 'RECONCILED') {
+        existing.deliveredCount += 1;
+      }
+      if (d.status === 'PARTIALLY_RECEIVED' || d.status === 'DISCREPANCY_REVIEW') {
+        existing.discrepancyCount += 1;
+      }
+      partnerMap.set(pId, existing);
+    }
+
+    const partnerPerformance = Array.from(partnerMap.values()).map((p) => ({
+      ...p,
+      successRate: p.totalDispatches > 0 ? Math.round((p.deliveredCount / p.totalDispatches) * 100) : 100,
+    }));
+
+    return {
+      summary: {
+        totalDispatches,
+        deliveredDispatches,
+        inTransitDispatches,
+        discrepancyDispatches,
+        deliverySuccessRate,
+        discrepancyRate,
+        totalDispatchedVolume,
+        totalReceivedVolume,
+        totalLostVolume,
+        totalCargoValue,
+      },
+      discrepancyBreakdown: {
+        shortage,
+        damaged,
+        lost,
+        overage,
+        countMismatch,
+      },
+      partnerPerformance,
     };
   }
 }

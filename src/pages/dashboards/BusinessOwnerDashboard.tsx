@@ -24,17 +24,20 @@ import { api } from '../../services/api.js';
 import { StatusBadge } from '../../components/common/StatusBadge.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 import { ExecutiveAnalyticsCharts } from '../../components/dashboards/ExecutiveAnalyticsCharts.js';
+import { ProfileSummaryCard } from '../../components/common/ProfileSummaryCard.js';
 
 interface BusinessOwnerDashboardProps {
   onSelectDispatch: (id: string) => void;
   onNavigateTab: (tab: string) => void;
   onCreateDispatch: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
   onSelectDispatch,
   onNavigateTab,
   onCreateDispatch,
+  onOpenProfile,
 }) => {
   const { user, switchBusiness, createBusiness } = useAuth();
   const { t } = useTranslation();
@@ -136,6 +139,9 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Profile Summary Card */}
+      <ProfileSummaryCard onOpenProfile={onOpenProfile} />
+
       {/* Executive Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm">
         <div className="relative">
@@ -176,7 +182,7 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
               <div className="fixed inset-0 z-20" onClick={() => setShowBusinessDropdown(false)} />
               <div className="absolute left-0 top-full mt-2 w-80 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-2 z-30">
                 <div className="px-3 py-2 border-b border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                  <span>Switch Business Entity</span>
+                  <span>{t('action.switch_entity', 'Switch Business Entity')}</span>
                   {isSwitching && <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />}
                 </div>
                 <div className="py-1 max-h-56 overflow-y-auto divide-y divide-slate-800/40 scrollbar-thin">
@@ -227,7 +233,7 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-300 hover:text-white hover:bg-indigo-900/40 border border-indigo-900/60 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Register New Business Entity</span>
+                    <span>{t('action.register_new_entity', 'Register New Business Entity')}</span>
                   </button>
                 </div>
               </div>
@@ -254,7 +260,7 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
             <Truck className="w-4 h-4 text-sky-400" />
           </div>
           <div className="text-2xl font-bold text-white">{activeDispatches}</div>
-          <div className="text-[11px] text-slate-500 mt-1">Out of {totalDispatches} {t('metric.total_dispatches')}</div>
+          <div className="text-[11px] text-slate-500 mt-1">{t('metric.out_of_total', 'Out of {total} dispatches', { total: totalDispatches })}</div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
@@ -263,7 +269,7 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
             <Package className="w-4 h-4 text-indigo-400" />
           </div>
           <div className="text-2xl font-bold text-white">{totalItemsSent.toLocaleString()}</div>
-          <div className="text-[11px] text-slate-500 mt-1">Across all manifests</div>
+          <div className="text-[11px] text-slate-500 mt-1">{t('metric.across_all_manifests', 'Across all manifests')}</div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
@@ -272,7 +278,7 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
             <AlertTriangle className="w-4 h-4 text-rose-400" />
           </div>
           <div className="text-2xl font-bold text-rose-400">{totalItemsLost.toLocaleString()}</div>
-          <div className="text-[11px] text-rose-400/80 mt-1">Requiring credit notes / audit</div>
+          <div className="text-[11px] text-rose-400/80 mt-1">{t('metric.requiring_audit', 'Requiring credit notes / audit')}</div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
@@ -281,7 +287,7 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-bold text-emerald-400">{reconciliationRate}%</div>
-          <div className="text-[11px] text-emerald-400/80 mt-1">Fulfilled to receiving partner</div>
+          <div className="text-[11px] text-emerald-400/80 mt-1">{t('metric.fulfilled_to_partner', 'Fulfilled to receiving partner')}</div>
         </div>
       </div>
 
@@ -385,15 +391,15 @@ export const BusinessOwnerDashboard: React.FC<BusinessOwnerDashboardProps> = ({
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
-          <table className="w-full text-left text-xs min-w-[640px] md:min-w-full">
+          <table className="w-full text-left text-xs min-w-[760px] lg:min-w-full">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="px-3 py-3 font-semibold whitespace-nowrap">Dispatch Number</th>
-                <th className="px-3 py-3 font-semibold whitespace-nowrap">Partner Destination</th>
-                <th className="px-3 py-3 font-semibold whitespace-nowrap">Status</th>
-                <th className="px-3 py-3 font-semibold whitespace-nowrap">Items</th>
-                <th className="px-3 py-3 font-semibold whitespace-nowrap">Reconciliation Outcome</th>
-                <th className="px-3 py-3 font-semibold text-right whitespace-nowrap">Action</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Dispatch Number</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Partner Destination</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Status</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Items</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Reconciliation Outcome</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold text-right whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">

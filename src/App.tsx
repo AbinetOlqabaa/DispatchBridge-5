@@ -25,6 +25,7 @@ import { AuditPage } from './pages/audit/AuditPage.js';
 import { SystemStatusPage } from './pages/system/SystemStatusPage.js';
 import { RecommendationsView } from './components/recommendations/RecommendationsView.js';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer.js';
+import { ProfileModal } from './components/auth/ProfileModal.js';
 
 import { LoadingSpinner } from './components/common/LoadingSpinner.js';
 
@@ -39,6 +40,7 @@ function MainApp() {
   // Modal & Drawer State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'register' | 'forgot' | 'verifyPhone'>('signin');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCreateDispatchOpen, setIsCreateDispatchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
@@ -105,13 +107,19 @@ function MainApp() {
 
     switch (user.role) {
       case 'SUPER_ADMIN':
-        return <SuperAdminDashboard onNavigateStatus={() => setCurrentTab('status')} />;
+        return (
+          <SuperAdminDashboard
+            onNavigateStatus={() => setCurrentTab('status')}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+          />
+        );
       case 'BUSINESS_OWNER':
         return (
           <BusinessOwnerDashboard
             onSelectDispatch={(id) => setSelectedDispatchId(id)}
             onNavigateTab={(tab) => setCurrentTab(tab)}
             onCreateDispatch={() => setIsCreateDispatchOpen(true)}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
           />
         );
       case 'SENDER':
@@ -120,12 +128,24 @@ function MainApp() {
             onSelectDispatch={(id) => setSelectedDispatchId(id)}
             onCreateDispatch={() => setIsCreateDispatchOpen(true)}
             onOpenPublicLink={(token) => setPublicShareToken(token)}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
           />
         );
       case 'RECEIVER':
-        return <ReceiverDashboard onSelectDispatch={(id) => setSelectedDispatchId(id)} />;
+        return (
+          <ReceiverDashboard
+            onSelectDispatch={(id) => setSelectedDispatchId(id)}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+          />
+        );
       default:
-        return <DispatchListPage onSelectDispatch={(id) => setSelectedDispatchId(id)} onCreateDispatch={() => setIsCreateDispatchOpen(true)} onOpenPublicLink={(t) => setPublicShareToken(t)} />;
+        return (
+          <DispatchListPage
+            onSelectDispatch={(id) => setSelectedDispatchId(id)}
+            onCreateDispatch={() => setIsCreateDispatchOpen(true)}
+            onOpenPublicLink={(t) => setPublicShareToken(t)}
+          />
+        );
     }
   };
 
@@ -143,6 +163,7 @@ function MainApp() {
           setIsAuthModalOpen(true);
         }}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
       />
 
       {/* Sandbox Isolation & Notification Banners */}
@@ -158,7 +179,7 @@ function MainApp() {
       />
 
       {/* Main View Area - With max-w-full and overflow containment */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 max-w-full overflow-x-hidden">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 pb-24 md:pb-8 max-w-full overflow-x-hidden">
         {selectedDispatchId ? (
           <DispatchDetailPage
             dispatchId={selectedDispatchId}
@@ -220,6 +241,12 @@ function MainApp() {
         isOpen={isAuthModalOpen}
         initialMode={authModalMode}
         onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      {/* User Profile Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
       />
 
       {/* Create Dispatch Manifest Modal */}

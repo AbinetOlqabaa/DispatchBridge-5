@@ -17,17 +17,20 @@ import { Dispatch } from '../../types/dispatch.js';
 import { api } from '../../services/api.js';
 import { StatusBadge } from '../../components/common/StatusBadge.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
+import { ProfileSummaryCard } from '../../components/common/ProfileSummaryCard.js';
 
 interface SenderDashboardProps {
   onSelectDispatch: (id: string) => void;
   onCreateDispatch: () => void;
   onOpenPublicLink: (token: string) => void;
+  onOpenProfile?: () => void;
 }
 
 export const SenderDashboard: React.FC<SenderDashboardProps> = ({
   onSelectDispatch,
   onCreateDispatch,
   onOpenPublicLink,
+  onOpenProfile,
 }) => {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -72,6 +75,9 @@ export const SenderDashboard: React.FC<SenderDashboardProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Profile Summary Card */}
+      <ProfileSummaryCard onOpenProfile={onOpenProfile} />
+
       {/* Sender Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm">
         <div>
@@ -150,16 +156,16 @@ export const SenderDashboard: React.FC<SenderDashboardProps> = ({
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
-          <table className="w-full text-left text-xs min-w-[760px]">
+          <table className="w-full text-left text-xs min-w-[760px] lg:min-w-full">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Dispatch Number</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Partner Destination</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Status</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Partner Viewed Status</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Driver & Cargo</th>
-                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Share / Link</th>
-                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Detail</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Dispatch #</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Destination</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Status</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Partner View</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Driver & Cargo</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold text-right whitespace-nowrap">Share Link</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold text-right whitespace-nowrap pr-3.5">Detail</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">

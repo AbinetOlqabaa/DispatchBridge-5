@@ -10,12 +10,14 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
+import { useTranslation } from '../../context/LanguageContext.js';
 import { AuditLogEntry } from '../../types/dispatch.js';
 import { api } from '../../services/api.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 
 export const AuditPage: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -96,13 +98,13 @@ export const AuditPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-purple-400 bg-purple-950 px-2.5 py-0.5 rounded-full border border-purple-800">
-              Audit & Compliance
+              {t('system.audit_title', 'Audit & Compliance')}
             </span>
             <span className="text-xs text-slate-400">Append-Only Immutable Ledger</span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Tamper-Resistant Audit Trail</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{t('nav.audit', 'Tamper-Resistant Audit Trail')}</h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Full event history recording dispatch creations, view receipts, dock reconciliations, and logins.
+            {t('system.audit_subtitle', 'Full event history recording dispatch creations, view receipts, dock reconciliations, and logins.')}
           </p>
         </div>
 
@@ -111,7 +113,7 @@ export const AuditPage: React.FC = () => {
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium cursor-pointer transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Ledger</span>
+          <span>{t('action.refresh', 'Refresh Ledger')}</span>
         </button>
       </div>
 
@@ -209,35 +211,35 @@ export const AuditPage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
-          <table className="w-full text-left text-xs min-w-[720px]">
+          <table className="w-full text-left text-xs min-w-[820px] lg:min-w-full">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Event Timestamp</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Actor & Role</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Action</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Entity</th>
-                <th className="px-3.5 py-3 font-semibold">Audit Record Summary</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">{t('system.timestamp', 'Event Timestamp')}</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">{t('system.actor', 'Actor & Role')}</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap">{t('system.event_action', 'Action')}</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold whitespace-nowrap min-w-[120px]">Entity</th>
+                <th className="px-3 sm:px-3.5 py-3 font-semibold min-w-[220px]">{t('system.details', 'Audit Record Summary')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
               {filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-800/30">
-                  <td className="px-3.5 py-3 text-slate-400 whitespace-nowrap">
+                  <td className="px-3 sm:px-3.5 py-3 text-slate-400 whitespace-nowrap">
                     {new Date(log.timestamp).toLocaleString()}
                   </td>
-                  <td className="px-3.5 py-3 whitespace-nowrap">
+                  <td className="px-3 sm:px-3.5 py-3 whitespace-nowrap">
                     <span className="font-semibold text-slate-200">{log.actorName}</span>
                     <span className="text-[10px] text-slate-500 block font-sans">Role: {log.actorRole}</span>
                   </td>
-                  <td className="px-3.5 py-3">
+                  <td className="px-3 sm:px-3.5 py-3 whitespace-nowrap">
                     <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
                       {log.action}
                     </span>
                   </td>
-                  <td className="px-3.5 py-3 text-indigo-300 whitespace-nowrap">
+                  <td className="px-3 sm:px-3.5 py-3 text-indigo-300 whitespace-nowrap">
                     {log.entityType} ({log.entityId})
                   </td>
-                  <td className="px-3.5 py-3 text-slate-300 font-sans text-xs">
+                  <td className="px-3 sm:px-3.5 py-3 text-slate-300 font-sans text-xs">
                     {log.details}
                   </td>
                 </tr>

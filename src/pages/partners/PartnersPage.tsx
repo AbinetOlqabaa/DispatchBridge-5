@@ -11,6 +11,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
+import { useTranslation } from '../../context/LanguageContext.js';
 import { Partner } from '../../types/dispatch.js';
 import { api } from '../../services/api.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
@@ -21,6 +22,7 @@ interface PartnersPageProps {
 
 export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWithPartner }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -94,13 +96,13 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-sky-400 bg-sky-950 px-2.5 py-0.5 rounded-full border border-sky-800">
-              Receiving Partners
+              {t('nav.partners', 'Receiving Partners')}
             </span>
-            <span className="text-xs text-slate-400">{partners.length} verified destinations</span>
+            <span className="text-xs text-slate-400">{partners.length} {t('metric.registered_partners')}</span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Partner Directory & Delivery Docks</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{t('nav.partners', 'Partner Directory')}</h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Manage receiving partners, retail storefronts, and wholesale distribution hubs.
+            {t('action.manage_partners', 'Manage receiving partners, retail storefronts, and wholesale distribution hubs.')}
           </p>
         </div>
 
@@ -110,7 +112,7 @@ export const PartnersPage: React.FC<PartnersPageProps> = ({ onCreateDispatchWith
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Partner Destination</span>
+            <span>{t('action.add_partner', 'Add Partner Destination')}</span>
           </button>
         )}
       </div>

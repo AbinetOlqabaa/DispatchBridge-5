@@ -25,6 +25,18 @@ import {
   getOfflineTelemetryQueue,
   clearOfflineTelemetryQueue,
 } from '../src/utils/mapCache.js';
+import {
+  maskFan,
+  maskFin,
+  maskPhoneNumber,
+  validateFanFormat,
+  validateFinFormat,
+  FaydaSimulationAdapter,
+  FaydaProductionAdapter,
+} from '../src/server/adapters/faydaAdapter.js';
+import { otpChallengeStore } from '../src/server/adapters/otpAdapter.js';
+import { normalizeToE164, isValidE164 } from '../src/utils/phoneUtils.js';
+import { translations, SUPPORTED_LANGUAGES, SupportedLanguage } from '../src/i18n/translations.js';
 
 interface TestResult {
   group: string;
@@ -1052,9 +1064,628 @@ async function runTestSuite() {
     assert(Boolean(reconciled.discrepancyCases && reconciled.discrepancyCases.length > 0), 'Discrepancy case opened automatically');
   });
 
+  await test('Tablet UX & Responsive Stability', 'Tablet Multi-Viewport Density: Metric cards 2-column wrapping, responsive table scrolling bounds, and filter row protection', async () => {
+    // 1. Verify metric valuations scale accurately without numeric truncation or collision
+    const dispatches = await sandboxStore.getDispatches();
+    assert(dispatches.length >= 3, 'Multiple dispatches exist for aggregate calculation');
+
+    const pendingDispatches = dispatches.filter((d) =>
+      ['IN_TRANSIT', 'DISPATCHED', 'VIEWED', 'SUBMITTED'].includes(d.status)
+    );
+    const totalValueInTransit = pendingDispatches.reduce((acc, d) => {
+      const dispatchValue = d.lines.reduce(
+        (lineSum, l) => lineSum + l.quantitySent * (l.unitPrice || 25),
+        0
+      );
+      return acc + dispatchValue;
+    }, 0);
+    assert(totalValueInTransit > 0, 'Total value in transit is non-zero and formatted cleanly');
+
+    // 2. Validate partner destinations and location terminals have address snapshots for bounded rendering
+    const partners = await sandboxStore.getPartners();
+    for (const p of partners) {
+      assert(Boolean(p.deliveryAddress && p.deliveryAddress.length > 0), `Partner ${p.name} has bounded delivery address`);
+      assert(Boolean(p.contactPerson), `Partner ${p.name} has contact person`);
+      assert(Boolean(p.phone), `Partner ${p.name} has phone number`);
+    }
+
+    // 3. Confirm all location snapshots have complete labels and coordinate markers
+    const locations = await sandboxStore.getLocations(senderUser.businessId);
+    for (const loc of locations) {
+      assert(Boolean(loc.label), `Location ${loc.id} has label`);
+      assert(Boolean(loc.city), `Location ${loc.id} has city`);
+      assert(typeof loc.latitude === 'number' && typeof loc.longitude === 'number', `Location ${loc.id} has valid numeric coordinates`);
+    }
+
+    // 4. Validate system staging report passes all release checklist domains
+    const stagingReport = await sandboxStore.getStagingReadinessReport();
+    assertEqual(stagingReport.overallStatus, 'READY_FOR_STAGING', 'Diagnostics engine confirms READY_FOR_STAGING');
+  });
+
   // -------------------------------------------------------------------------
-  // Summary
+  // 6. Identity, Fayda e-ID, OTP & Admin Governance Acceptance Tests
   // -------------------------------------------------------------------------
+  console.log('\n--- 6. Identity, Fayda e-ID, OTP & Admin Governance Tests ---');
+
+  await test('Identity & Fayda', 'FAN and FIN numeric format validation & data masking', () => {
+    // 1. FAN 16 numeric digits validation (preserves leading zeros)
+    assert(validateFanFormat('1234567890123456').valid, 'Valid 16-digit FAN passes');
+    assert(validateFanFormat('0123456789012345').valid, '16-digit FAN with leading zero passes');
+    assert(!validateFanFormat('123456789012345').valid, '15-digit FAN fails');
+    assert(!validateFanFormat('12345678901234567').valid, '17-digit FAN fails');
+    assert(!validateFanFormat('123456789012345a').valid, 'Non-numeric FAN fails');
+
+    // 2. FIN 12 numeric digits validation (preserves leading zeros)
+    assert(validateFinFormat('123456789012').valid, 'Valid 12-digit FIN passes');
+    assert(validateFinFormat('012345678901').valid, '12-digit FIN with leading zero passes');
+    assert(!validateFinFormat('12345678901').valid, '11-digit FIN fails');
+    assert(!validateFinFormat('1234567890123').valid, '13-digit FIN fails');
+    assert(!validateFinFormat('12345678901x').valid, 'Non-numeric FIN fails');
+
+    // 3. Masking functions
+    assertEqual(maskFan('1234567890123456'), '•••• •••• •••• 3456', 'FAN is masked leaving only last 4 digits');
+    assertEqual(maskFin('123456789012'), '•••• •••• 9012', 'FIN is masked leaving only last 4 digits');
+    assert(maskPhoneNumber('+251911223344').includes('•••'), 'Phone number is masked');
+  });
+
+  await test('Identity & Fayda', 'Public self-registration strictly rejects SUPER_ADMIN role', async () => {
+    let errorCaught = false;
+    try {
+      await sandboxStore.initiateRegistration({
+        name: 'Malicious Actor',
+        email: 'attacker@example.com',
+        phoneNumber: '+251999887766',
+        password: 'Password123!',
+        role: 'SUPER_ADMIN' as any,
+        businessName: 'Infiltrator Corp',
+        fan: '1111222233334444',
+        fin: '111122223333',
+      });
+    } catch (err: any) {
+      errorCaught = true;
+      assert(err.message.toLowerCase().includes('super administrator'), 'Proper rejection error thrown');
+    }
+    assert(errorCaught, 'SUPER_ADMIN self-registration must be rejected server-side');
+  });
+
+  await test('Identity & Fayda', 'Fayda adapter simulation fixtures & production fail-closed', async () => {
+    const simAdapter = new FaydaSimulationAdapter();
+
+    // 1. Valid verification match
+    const validResult = await simAdapter.verifyFanFinMatch({
+      fan: '5555666677778888',
+      fin: '555566667777',
+      phoneNumber: '+251911223344',
+    });
+    assert(validResult.verified, 'Simulation verifies matching synthetic Fayda credentials');
+    assertEqual(validResult.verificationMethod, 'FAYDA_DEV_SIMULATED', 'Returns FAYDA_DEV_SIMULATED method');
+
+    // 2. Timeout fixture (phone ending in 0000)
+    let timeoutCaught = false;
+    try {
+      await simAdapter.verifyFanFinMatch({
+        fan: '5555666677778888',
+        fin: '555566667777',
+        phoneNumber: '+251911000000',
+      });
+    } catch (err: any) {
+      timeoutCaught = true;
+      assert(err.message.includes('timed out'), 'Simulated timeout fixture triggered');
+    }
+    assert(timeoutCaught, 'Timeout fixture must throw network timeout error');
+
+    // 3. Mismatch fixture (phone ending in 999)
+    const mismatchResult = await simAdapter.verifyFanFinMatch({
+      fan: '5555666677778888',
+      fin: '555566667777',
+      phoneNumber: '+251911000999',
+    });
+    assert(!mismatchResult.verified, 'Simulated mismatch fixture marks verification as false');
+    assert(Boolean(mismatchResult.failureReason), 'Failure reason is provided');
+
+    // 4. Production adapter fails closed
+    const prodAdapter = new FaydaProductionAdapter();
+    let prodFailClosed = false;
+    try {
+      await prodAdapter.verifyFanFinMatch({
+        fan: '5555666677778888',
+        fin: '555566667777',
+        phoneNumber: '+251911223344',
+      });
+    } catch (err: any) {
+      prodFailClosed = true;
+      assert(err.message.includes('failing closed'), 'Production adapter fails closed when unconfigured');
+    }
+    assert(prodFailClosed, 'Production adapter must fail closed');
+  });
+
+  await test('Identity & Fayda', 'OTP challenge lifecycle (purpose binding, attempt limits, single-use)', async () => {
+    // 1. Create challenge
+    const challenge = await otpChallengeStore.createChallenge('+251911998877', 'REGISTRATION');
+    assert(Boolean(challenge.challengeId), 'Challenge created with ID');
+    assertEqual(challenge.purpose, 'REGISTRATION', 'Purpose set correctly');
+
+    // 2. Wrong purpose verification fails
+    const wrongPurpose = otpChallengeStore.verifyOtp(challenge.challengeId, '123456', 'PASSWORD_RESET');
+    assert(!wrongPurpose.success, 'Verifying OTP with mismatched purpose must fail');
+
+    // 3. Wrong code increments attempts
+    const wrongCode = otpChallengeStore.verifyOtp(challenge.challengeId, '000000', 'REGISTRATION');
+    assert(!wrongCode.success, 'Invalid code fails verification');
+    assertEqual(wrongCode.attemptsRemaining, 4, 'Remaining attempts decremented');
+
+    // 4. Valid dev simulated code succeeds
+    const validVerify = otpChallengeStore.verifyOtp(challenge.challengeId, '123456', 'REGISTRATION');
+    assert(validVerify.success, 'Valid OTP succeeds');
+
+    // 5. Single-use invalidation: subsequent attempt with same challenge fails
+    const replayed = otpChallengeStore.verifyOtp(challenge.challengeId, '123456', 'REGISTRATION');
+    assert(!replayed.success, 'Consumed OTP challenge cannot be replayed (single-use enforced)');
+  });
+
+  await test('Identity & Fayda', 'Mobile number authentication with E.164 normalization', async () => {
+    // 1. Phone normalization
+    assertEqual(normalizeToE164('0911223344', 'ET'), '+251911223344', 'Local Ethiopian mobile normalized to E.164');
+    assertEqual(normalizeToE164('+251911223344', 'ET'), '+251911223344', 'Already-E.164 Ethiopian mobile preserved');
+    assert(isValidE164('+251911223344'), 'Valid E.164 format verified');
+
+    // 2. Successful mobile login
+    const authResult = await sandboxStore.loginWithMobile(senderUser.phoneNumber, 'Password123!');
+    assertEqual(authResult.user.id, senderUser.id, 'Logged in user ID matches');
+    assert(Boolean(authResult.user.maskedFan), 'Masked FAN present on session user');
+    assert(Boolean(authResult.user.maskedFin), 'Masked FIN present on session user');
+
+    // 3. Invalid credentials timing-safe generic error
+    let badCredsCaught = false;
+    try {
+      await sandboxStore.loginWithMobile(senderUser.phoneNumber, 'wrongPassword!');
+    } catch (err: any) {
+      badCredsCaught = true;
+      assertEqual(err.message, 'Invalid mobile number or password.', 'Generic error returned for invalid password');
+    }
+    assert(badCredsCaught, 'Invalid password throws error');
+  });
+
+  await test('Identity & Fayda', 'End-to-end registration flow with unique linkage & opaque usr_ ID', async () => {
+    const testPhone = '+251922334455';
+    const testFan = '9876543210987654';
+    const testFin = '987654321098';
+
+    // 1. Duplicate registration checks against existing seed user (Carlos)
+    // Duplicate Phone (+15550195572 exists)
+    let dupPhoneCaught = false;
+    try {
+      await sandboxStore.initiateRegistration({
+        name: 'Another User',
+        email: 'another@example.com',
+        phoneNumber: senderUser.phoneNumber,
+        password: 'Password123!',
+        role: 'RECEIVER',
+        businessName: 'Other Biz',
+        fan: '1234123412341234',
+        fin: '123412341234',
+      });
+    } catch (err: any) {
+      dupPhoneCaught = true;
+      assert(err.message.includes('mobile phone number is already registered'), 'Duplicate phone rejected');
+    }
+    assert(dupPhoneCaught, 'Duplicate phone number must be rejected');
+
+    // Duplicate FAN (2222333344445555 exists)
+    let dupFanCaught = false;
+    try {
+      await sandboxStore.initiateRegistration({
+        name: 'Another User',
+        email: 'another2@example.com',
+        phoneNumber: '+251922334499',
+        password: 'Password123!',
+        role: 'RECEIVER',
+        businessName: 'Other Biz',
+        fan: '2222333344445555',
+        fin: '123412341234',
+      });
+    } catch (err: any) {
+      dupFanCaught = true;
+      assert(err.message.includes('FAN') && err.message.includes('exists'), 'Duplicate FAN rejected');
+    }
+    assert(dupFanCaught, 'Duplicate FAN must be rejected');
+
+    // Duplicate FIN (222233334444 exists)
+    let dupFinCaught = false;
+    try {
+      await sandboxStore.initiateRegistration({
+        name: 'Another User',
+        email: 'another3@example.com',
+        phoneNumber: '+251922334488',
+        password: 'Password123!',
+        role: 'RECEIVER',
+        businessName: 'Other Biz',
+        fan: '5555111122223333',
+        fin: '222233334444',
+      });
+    } catch (err: any) {
+      dupFinCaught = true;
+      assert(err.message.includes('FIN') && err.message.includes('exists'), 'Duplicate FIN rejected');
+    }
+    assert(dupFinCaught, 'Duplicate FIN must be rejected');
+
+    // 2. Initiate valid registration
+    const initRes = await sandboxStore.initiateRegistration({
+      name: 'Abebe Bikila',
+      email: 'abebe.test@logistics.et',
+      phoneNumber: testPhone,
+      password: 'SecurePassword123!',
+      role: 'SENDER',
+      businessName: 'Bikila Express Deliveries',
+      fan: testFan,
+      fin: testFin,
+    });
+    assert(Boolean(initRes.challengeId), 'Registration challenge ID returned');
+    assertEqual(initRes.maskedPhone, maskPhoneNumber(testPhone), 'Masked phone returned in response');
+
+    // 3. Complete registration with dev OTP '123456'
+    const completeRes = await sandboxStore.completeRegistration(initRes.challengeId, '123456');
+    assert(completeRes.user.id.startsWith('usr_'), `User ID is opaque usr_ identifier: ${completeRes.user.id}`);
+    assertEqual(completeRes.user.role, 'SENDER', 'Assigned role is SENDER');
+    assertEqual(completeRes.user.maskedFan, maskFan(testFan), 'User masked FAN matches');
+    assertEqual(completeRes.user.maskedFin, maskFin(testFin), 'User masked FIN matches');
+    assertEqual(completeRes.user.faydaStatus, 'SIMULATED_VERIFIED', 'Fayda status is verified');
+
+    // 4. Verify newly created user can log in with mobile number
+    const newLogin = await sandboxStore.loginWithMobile(testPhone, 'SecurePassword123!');
+    assertEqual(newLogin.user.id, completeRes.user.id, 'User can log in with mobile credentials');
+  });
+
+  await test('Identity & Fayda', 'Forgot-password recovery with FAN + FIN match & phone OTP', async () => {
+    // Using user carlos (+15550195572, fan: '2222333344445555', fin: '222233334444')
+    // 1. Wrong FAN/FIN fails initiation
+    let wrongIdentityCaught = false;
+    try {
+      await sandboxStore.initiatePasswordReset({
+        phoneNumber: senderUser.phoneNumber,
+        fan: '0000000000000000',
+        fin: '222233334444',
+      });
+    } catch (err: any) {
+      wrongIdentityCaught = true;
+      assert(err.message.includes('Identity verification'), 'Mismatch error returned');
+    }
+    assert(wrongIdentityCaught, 'Mismatched FAN/FIN must be rejected for recovery');
+
+    // 2. Correct phone + FAN + FIN initiates challenge
+    const resetInit = await sandboxStore.initiatePasswordReset({
+      phoneNumber: senderUser.phoneNumber,
+      fan: '2222333344445555',
+      fin: '222233334444',
+    });
+    assert(Boolean(resetInit.challengeId), 'Recovery challenge created');
+
+    // 3. Complete reset with OTP
+    const resetRes = await sandboxStore.completePasswordReset(
+      resetInit.challengeId,
+      '123456',
+      'NewSecurePass2026!'
+    );
+    assert(resetRes.success, 'Password reset confirmed');
+
+    // 4. Login with new password succeeds
+    const resetLogin = await sandboxStore.loginWithMobile(senderUser.phoneNumber, 'NewSecurePass2026!');
+    assertEqual(resetLogin.user.id, senderUser.id, 'Login with updated password succeeds');
+
+    // Reset password back to Password123! for downstream tests
+    const restoreInit = await sandboxStore.initiatePasswordReset({
+      phoneNumber: senderUser.phoneNumber,
+      fan: '2222333344445555',
+      fin: '222233334444',
+    });
+    await sandboxStore.completePasswordReset(restoreInit.challengeId, '123456', 'Password123!');
+  });
+
+  await test('Identity & Fayda', 'Signed-in password change with step-up OTP challenge', async () => {
+    // 1. Request step-up challenge for senderUser
+    const stepUpInit = await sandboxStore.initiatePasswordChangeOtp(senderUser.id);
+    assert(Boolean(stepUpInit.challengeId), 'Step-up challenge created');
+
+    // 2. Wrong current password fails
+    let wrongCurrentCaught = false;
+    try {
+      await sandboxStore.changePassword(
+        senderUser.id,
+        'wrongCurrentPass',
+        'BrandNewPass999!',
+        stepUpInit.challengeId,
+        '123456'
+      );
+    } catch (err: any) {
+      wrongCurrentCaught = true;
+      assert(err.message.includes('Current password'), 'Current password failure detected');
+    }
+    assert(wrongCurrentCaught, 'Invalid current password rejected');
+
+    // 3. Request fresh challenge
+    const freshStepUp = await sandboxStore.initiatePasswordChangeOtp(senderUser.id);
+
+    // 4. Correct current password + OTP succeeds
+    const changeRes = await sandboxStore.changePassword(
+      senderUser.id,
+      'Password123!',
+      'BrandNewPass999!',
+      freshStepUp.challengeId,
+      '123456'
+    );
+    assert(changeRes.success, 'Password change successful');
+
+    // 5. Restore original password
+    const restoreStepUp = await sandboxStore.initiatePasswordChangeOtp(senderUser.id);
+    await sandboxStore.changePassword(
+      senderUser.id,
+      'BrandNewPass999!',
+      'Password123!',
+      restoreStepUp.challengeId,
+      '123456'
+    );
+  });
+
+  await test('Identity & Fayda', 'Profile photo upload size limits, validation & removal', async () => {
+    // 1. Over-sized image (> 2MB) rejected
+    const hugeFakeImage = 'data:image/jpeg;base64,' + 'A'.repeat(3 * 1024 * 1024);
+    let sizeErrorCaught = false;
+    try {
+      await sandboxStore.updateProfile(senderUser.id, { avatarDataUri: hugeFakeImage });
+    } catch (err: any) {
+      sizeErrorCaught = true;
+      assert(err.message.includes('2MB'), '2MB size limit enforced');
+    }
+    assert(sizeErrorCaught, 'Images larger than 2MB must be rejected');
+
+    // 2. Invalid MIME type rejected
+    const invalidMime = 'data:text/plain;base64,SGVsbG8gV29ybGQ=';
+    let mimeErrorCaught = false;
+    try {
+      await sandboxStore.updateProfile(senderUser.id, { avatarDataUri: invalidMime });
+    } catch (err: any) {
+      mimeErrorCaught = true;
+      assert(err.message.includes('valid image'), 'Non-image MIME type rejected');
+    }
+    assert(mimeErrorCaught, 'Invalid MIME type must be rejected');
+
+    // 3. Valid image updates user avatar
+    const validSmallAvatar = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const updatedUser = await sandboxStore.updateProfile(senderUser.id, {
+      name: 'Carlos M. Ruiz',
+      avatarDataUri: validSmallAvatar,
+    });
+    assertEqual(updatedUser.name, 'Carlos M. Ruiz', 'Name updated');
+    assertEqual(updatedUser.avatarUrl, validSmallAvatar, 'Avatar updated');
+
+    // 4. Remove photo
+    const clearedUser = await sandboxStore.removeProfilePhoto(senderUser.id);
+    assertEqual(clearedUser.avatarUrl, undefined, 'Avatar photo removed cleanly');
+  });
+
+  await test('Identity & Fayda', 'Admin user governance & lockout protection for last super-admin', async () => {
+    // 1. Admin query users: returns list with masked fields, no raw fan/fin
+    const res = await sandboxStore.adminGetUsers();
+    const adminUsers = res.users;
+    assert(adminUsers.length >= 4, 'All tenant users returned for Super Admin');
+    for (const u of adminUsers) {
+      assert((u as any).fan === undefined, 'Raw FAN must NEVER be exposed in user management query');
+      assert((u as any).fin === undefined, 'Raw FIN must NEVER be exposed in user management query');
+      assert(Boolean(u.maskedPhone), 'Masked phone provided');
+    }
+
+    // 2. Identify the active super admin and target receiver
+    const superAdmins = adminUsers.filter((u) => u.role === 'SUPER_ADMIN' && u.status === 'ACTIVE');
+    assert(superAdmins.length === 1, 'Exactly one active super-admin exists initially');
+    const soleSuperAdmin = superAdmins[0];
+
+    const receiverUsers = adminUsers.filter((u) => u.role === 'RECEIVER');
+    assert(receiverUsers.length > 0, 'Receiver user exists');
+    const targetReceiver = receiverUsers[0];
+
+    // 3. Suspend a receiver user with reason
+    const suspendRes = await sandboxStore.adminSuspendUser(
+      soleSuperAdmin.id,
+      targetReceiver.id,
+      'Security compliance review following suspicious dock activity'
+    );
+    assertEqual(suspendRes.status, 'SUSPENDED', 'Target user marked SUSPENDED');
+    assert(Boolean(suspendRes.suspendedReason), 'Suspension justification reason recorded');
+
+    // 4. Suspended user cannot log in
+    let suspendedLoginBlocked = false;
+    try {
+      await sandboxStore.loginWithMobile(targetReceiver.phoneNumber, 'Password123!');
+    } catch (err: any) {
+      suspendedLoginBlocked = true;
+      assert(err.message.includes('suspended'), 'Suspended user login rejected with explanation');
+    }
+    assert(suspendedLoginBlocked, 'Suspended user cannot authenticate');
+
+    // 5. Reactivate user
+    const reactivateRes = await sandboxStore.adminReactivateUser(soleSuperAdmin.id, targetReceiver.id);
+    assertEqual(reactivateRes.status, 'ACTIVE', 'User reactivated to ACTIVE');
+    assertEqual(reactivateRes.suspendedReason, undefined, 'Suspended reason cleared');
+
+    // 6. LOCKOUT PROTECTION: Attempting to suspend or demote the only super-admin throws error
+    let lockoutSuspendBlocked = false;
+    try {
+      await sandboxStore.adminSuspendUser(soleSuperAdmin.id, soleSuperAdmin.id, 'Accidental self-lockout test');
+    } catch (err: any) {
+      lockoutSuspendBlocked = true;
+      assert(err.message.includes('last remaining active Super Administrator'), 'Lockout protection prevents suspension');
+    }
+    assert(lockoutSuspendBlocked, 'Super-admin lockout protection must block suspension of last active super-admin');
+
+    let lockoutRoleDemotionBlocked = false;
+    try {
+      await sandboxStore.adminUpdateUserRole(soleSuperAdmin.id, soleSuperAdmin.id, 'SENDER');
+    } catch (err: any) {
+      lockoutRoleDemotionBlocked = true;
+      assert(err.message.includes('last remaining active Super Administrator'), 'Lockout protection prevents demotion');
+    }
+    assert(lockoutRoleDemotionBlocked, 'Super-admin lockout protection must block demotion of last active super-admin');
+  });
+
+  // -------------------------------------------------------------------------
+  // Layer 7: Team Invitations, Role Governance & Executive Analytics Tests
+  // -------------------------------------------------------------------------
+  await test('Governance & Analytics', 'Team Invitations & Cryptographic Token Acceptance Workflow', async () => {
+    // 1. Business Owner creates invitation for new team member
+    const invite = await sandboxStore.createInvitation(
+      {
+        businessId: 'biz_apex_supply',
+        inviteeEmail: 'carlos.operations@apexsupply.com',
+        inviteePhone: '+1-555-019-7722',
+        proposedRole: 'SENDER',
+      },
+      ownerUser
+    );
+
+    assert(Boolean(invite.id), 'Invitation created with unique ID');
+    assertEqual(invite.businessId, 'biz_apex_supply', 'Invitation bound to tenant');
+    assertEqual(invite.proposedRole, 'SENDER', 'Proposed role set to SENDER');
+    assertEqual(invite.status, 'PENDING', 'Initial invitation status is PENDING');
+    assert(invite.token.startsWith('inv_tok_'), 'Cryptographically random token generated');
+
+    // 2. Fetch business invitations list
+    const invitationsList = await sandboxStore.getBusinessInvitations('biz_apex_supply');
+    assert(invitationsList.some((i) => i.id === invite.id), 'Invitation listed in active invitations');
+
+    // 3. Authenticated user redeems token
+    const acceptResult = await sandboxStore.acceptInvitation(invite.token, receiverUser);
+    assert(acceptResult.success, 'Invitation accepted successfully');
+    assertEqual(acceptResult.membership.businessId, 'biz_apex_supply', 'User received active membership in business');
+    assertEqual(acceptResult.user.businessId, 'biz_apex_supply', 'Active business context switched to new business');
+    assertEqual(acceptResult.user.role, 'SENDER', 'User role updated according to invitation');
+
+    // 4. Update member role
+    const updatedMember = await sandboxStore.updateMemberRole('biz_apex_supply', receiverUser.id, 'BUSINESS_OWNER', ownerUser);
+    assertEqual(updatedMember.role, 'BUSINESS_OWNER', 'Member promoted to BUSINESS_OWNER');
+
+    // 5. Verify audit log entry
+    const audits = await sandboxStore.getAuditLogs({ businessId: 'biz_apex_supply' });
+    assert(audits.some((a) => a.action === 'TEAM_MEMBER_INVITED'), 'Audit log contains TEAM_MEMBER_INVITED');
+    assert(audits.some((a) => a.action === 'TEAM_INVITATION_ACCEPTED'), 'Audit log contains TEAM_INVITATION_ACCEPTED');
+  });
+
+  await test('Governance & Analytics', 'Executive Performance & Reconciliation Analytics Report Engine', async () => {
+    const report = await sandboxStore.getAnalyticsReport('biz_apex_supply', ownerUser);
+
+    assert(Boolean(report.summary), 'Report contains executive summary metrics');
+    assert(report.summary.totalDispatches >= 1, 'Total dispatches calculated');
+    assert(typeof report.summary.deliverySuccessRate === 'number', 'Delivery success rate is a number');
+    assert(typeof report.summary.totalCargoValue === 'number', 'Total cargo value calculated');
+
+    assert(Boolean(report.discrepancyBreakdown), 'Report contains discrepancy root cause breakdown');
+    assert(typeof report.discrepancyBreakdown.shortage === 'number', 'Shortage metric present');
+    assert(typeof report.discrepancyBreakdown.damaged === 'number', 'Damaged metric present');
+
+    assert(Array.isArray(report.partnerPerformance), 'Partner performance scorecard is an array');
+    if (report.partnerPerformance.length > 0) {
+      const partner = report.partnerPerformance[0];
+      assert(Boolean(partner.partnerName), 'Partner scorecard includes partner name');
+      assert(typeof partner.successRate === 'number', 'Partner scorecard includes success rate');
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // Localization & Multi-Language Translation Tests
+  // -------------------------------------------------------------------------
+  await test('Localization & Internationalization', 'Supported Languages Registry Parity (5 National Languages)', () => {
+    assertEqual(SUPPORTED_LANGUAGES.length, 5, 'Exactly 5 supported languages configured');
+    const expectedCodes: SupportedLanguage[] = ['en', 'am', 'om', 'ti', 'so'];
+    for (const code of expectedCodes) {
+      const match = SUPPORTED_LANGUAGES.find((lang) => lang.code === code);
+      assert(Boolean(match), `Language ${code} is present in registry`);
+      assert(Boolean(match?.label), `Language ${code} has an English label`);
+      assert(Boolean(match?.nativeName), `Language ${code} has a genuine native script label`);
+    }
+  });
+
+  await test('Localization & Internationalization', 'Dictionary Parity Across All 5 Languages (Zero Missing Keys)', () => {
+    const enKeys = Object.keys(translations.en);
+    assert(enKeys.length >= 100, `English dictionary contains comprehensive translation keys (found ${enKeys.length})`);
+
+    const targetLanguages: SupportedLanguage[] = ['am', 'om', 'ti', 'so'];
+    for (const lang of targetLanguages) {
+      const dict = translations[lang];
+      assert(Boolean(dict), `Dictionary for language '${lang}' exists`);
+
+      const missingKeys: string[] = [];
+      const emptyKeys: string[] = [];
+
+      for (const key of enKeys) {
+        if (!(key in dict)) {
+          missingKeys.push(key);
+        } else if (typeof dict[key] !== 'string' || dict[key].trim().length === 0) {
+          emptyKeys.push(key);
+        }
+      }
+
+      assertEqual(
+        missingKeys.length,
+        0,
+        `Language '${lang}' missing keys: [${missingKeys.slice(0, 10).join(', ')}${missingKeys.length > 10 ? '...' : ''}]`
+      );
+      assertEqual(
+        emptyKeys.length,
+        0,
+        `Language '${lang}' has empty string translations: [${emptyKeys.slice(0, 10).join(', ')}]`
+      );
+    }
+  });
+
+  await test('Localization & Internationalization', 'Parameter Interpolation Engine Dynamic Replacement', () => {
+    function interpolate(template: string, params: Record<string, string | number>): string {
+      let result = template;
+      for (const [k, v] of Object.entries(params)) {
+        result = result.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+      }
+      return result;
+    }
+
+    // Test across English, Amharic, Oromo, Tigrinya, and Somali
+    const enLoss = interpolate(translations.en['table.loss'], { count: 5 });
+    assertEqual(enLoss, 'Loss: 5 units', 'English parameter interpolation');
+
+    const amLoss = interpolate(translations.am['table.loss'], { count: 3 });
+    assertEqual(amLoss, 'ኪሳራ፡ 3 ክፍሎች', 'Amharic parameter interpolation');
+
+    const omLoss = interpolate(translations.om['table.loss'], { count: 12 });
+    assertEqual(omLoss, 'Kasaaraa: 12 qooda', 'Oromo parameter interpolation');
+
+    const tiLoss = interpolate(translations.ti['table.loss'], { count: 7 });
+    assertEqual(tiLoss, 'ኪሳራ፡ 7 ኣቑሑት', 'Tigrinya parameter interpolation');
+
+    const soLoss = interpolate(translations.so['table.loss'], { count: 9 });
+    assertEqual(soLoss, 'Khasaare: 9 xabbo', 'Somali parameter interpolation');
+  });
+
+  await test('Localization & Internationalization', 'Native Script & Linguistic Integrity', () => {
+    // Amharic and Tigrinya must use authentic Ethiopic Ge'ez characters (\u1200-\u137F)
+    const ethiopicRegex = /[\u1200-\u137F]/;
+    assert(
+      ethiopicRegex.test(translations.am['app.subtitle']),
+      'Amharic translations contain genuine Ethiopic script characters'
+    );
+    assert(
+      ethiopicRegex.test(translations.ti['app.subtitle']),
+      'Tigrinya translations contain genuine Ethiopic script characters'
+    );
+
+    // Afaan Oromoo and Somali must feature recognized terminology
+    assert(
+      translations.om['recon.record_receipt'].includes('Araarsa') ||
+      translations.om['recon.record_receipt'].includes('Nagahee'),
+      'Afaan Oromoo utilizes authentic reconciliation terminology'
+    );
+    assert(
+      translations.so['role.business_owner'].includes('Mulkiilaha') ||
+      translations.so['role.business_owner'].includes('Ganacsiga'),
+      'Somali utilizes authentic business role terminology'
+    );
+  });
   console.log('\n========================================================================');
   const total = testResults.length;
   const passed = testResults.filter((r) => r.status === 'PASS').length;

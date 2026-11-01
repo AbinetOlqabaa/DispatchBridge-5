@@ -26,6 +26,8 @@ interface AuthContextType {
   verifyPhoneOtp: (code: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; resetTokenPreview?: string }>;
   bootstrapSuperAdmin: (secret: string, payload: any) => Promise<{ success: boolean; user: User }>;
+  updateProfile: (data: { name?: string; avatarUrl?: string }) => Promise<User>;
+  removeProfilePhoto: () => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -165,6 +167,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return api.bootstrapSuperAdmin({ bootstrapSecret: secret, ...payload });
   };
 
+  const updateProfile = async (data: { name?: string; avatarUrl?: string }) => {
+    const updated = await api.updateProfile(data);
+    setUser(updated);
+    return updated;
+  };
+
+  const removeProfilePhoto = async () => {
+    const updated = await api.removeProfilePhoto();
+    setUser(updated);
+    return updated;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -191,6 +205,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         verifyPhoneOtp: verifyPhone,
         requestPasswordReset,
         bootstrapSuperAdmin,
+        updateProfile,
+        removeProfilePhoto,
       }}
     >
       {children}

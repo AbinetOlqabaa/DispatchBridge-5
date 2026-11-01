@@ -296,7 +296,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
             title="Scan QR barcode to verify transit checkpoints"
           >
             <QrCode className="w-3.5 h-3.5" />
-            <span>Scan QR / Transit</span>
+            <span>{t('action.scan_qr', 'Scan QR / Transit')}</span>
           </button>
 
           {/* Export PDF Manifest Button */}
@@ -307,7 +307,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
             title="Export official manifest to PDF for offline records"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{isExportingPdf ? 'Exporting...' : 'Export PDF Manifest'}</span>
+            <span>{isExportingPdf ? 'Exporting...' : t('action.export_pdf', 'Export PDF Manifest')}</span>
           </button>
 
           <button
@@ -362,7 +362,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
           <div className="flex items-center gap-3">
             <div className="text-right">
               <div className="text-xs font-medium text-slate-400">Total Cargo Quantity</div>
-              <div className="text-lg font-bold text-white font-mono">{dispatch.totalQuantityDispatched} units</div>
+              <div className="text-lg font-bold text-white font-mono">{dispatch.totalQuantityDispatched} {t('unit.units', 'units')}</div>
             </div>
           </div>
         </div>
@@ -390,7 +390,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
             </div>
           </div>
 
-          <div className="bg-slate-800/40 p-3.5 rounded-xl border border-slate-800">
+          <div className="bg-slate-800/40 p-3.5 rounded-xl border border-slate-800 sm:col-span-2 lg:col-span-1">
             <div className="text-slate-400 mb-1 flex items-center gap-1.5 font-semibold">
               <Truck className="w-3.5 h-3.5 text-blue-400" />
               <span>Carrier & Driver</span>
@@ -407,14 +407,14 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Eye className="w-4 h-4 text-indigo-400" />
-              <span className="font-bold text-white">Recipient View Receipt Audit</span>
+              <span className="font-bold text-white">{t('recon.first_viewed_audit', 'Recipient View Receipt Audit')}</span>
             </div>
             {dispatch.firstViewedAt ? (
               <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
-                Verified Partner View Recorded
+                {t('recon.verified_partner_view', 'Verified Partner View Recorded')}
               </span>
             ) : (
-              <span className="text-[11px] text-slate-500">Unviewed by Recipient</span>
+              <span className="text-[11px] text-slate-500">{t('status.unviewed', 'Unviewed by Recipient')}</span>
             )}
           </div>
 
@@ -426,7 +426,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
               </div>
               <div>
                 <span className="text-slate-500">Total Views:</span>{' '}
-                <span className="font-mono text-white">{dispatch.viewReceipt?.viewCount || 1} times</span>
+                <span className="font-mono text-white">{t('recon.view_count', 'Total Views: {count} times', { count: dispatch.viewReceipt?.viewCount || 1 })}</span>
               </div>
               <div>
                 <span className="text-slate-500">Viewer:</span>{' '}
@@ -446,7 +446,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
               className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 flex items-center gap-1.5"
             >
               {copied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied' : 'Copy Link'}</span>
+              <span>{copied ? t('action.copied', 'Copied') : t('action.copy_link', 'Copy Link')}</span>
             </button>
           </div>
         </div>
@@ -484,7 +484,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-white flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-rose-400" />
-              Active Discrepancy Cases ({dispatch.discrepancyCases.length})
+              {t('recon.active_cases', 'Active Discrepancy Cases ({count})', { count: dispatch.discrepancyCases.length })}
             </h2>
           </div>
 
@@ -677,7 +677,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-white flex items-center gap-2">
             <Package className="w-4 h-4 text-indigo-400" />
-            Itemized Manifest Lines ({dispatch.lines.length})
+            {t('table.items', 'Itemized Manifest Lines')} ({dispatch.lines.length})
           </h2>
           {canReconcile && !isReconciling && (
             <button
@@ -689,23 +689,23 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
               }}
               className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl cursor-pointer shadow-md shadow-amber-600/20"
             >
-              Record Dock Receipt & Reconciliation
+              {t('recon.record_receipt', 'Record Dock Receipt & Reconciliation')}
             </button>
           )}
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
-          <table className="w-full text-left text-xs min-w-[780px]">
+          <table className="w-full text-left text-xs min-w-[780px] lg:min-w-full">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">SKU</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Item Description</th>
-                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Dispatched</th>
-                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Received</th>
-                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">Shortfall</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Condition</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Discrepancy Category</th>
-                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">Notes</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.sku', 'SKU')}</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.item_description', 'Item Description')}</th>
+                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">{t('table.dispatched', 'Dispatched')}</th>
+                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">{t('table.received', 'Received')}</th>
+                <th className="px-3.5 py-3 font-semibold text-right whitespace-nowrap">{t('table.shortfall', 'Shortfall')}</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.condition', 'Condition')}</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.discrepancy_category', 'Discrepancy Category')}</th>
+                <th className="px-3.5 py-3 font-semibold whitespace-nowrap">{t('table.notes', 'Notes')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono">
@@ -838,7 +838,7 @@ export const DispatchDetailPage: React.FC<DispatchDetailPageProps> = ({
                     <span className="text-slate-400 font-mono">Dispatched: {line.quantitySent} {line.unit}</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-[11px] font-medium text-slate-300 mb-1">
                         Received Count ({line.unit}) *

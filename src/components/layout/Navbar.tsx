@@ -36,6 +36,7 @@ interface NavbarProps {
   onSelectTab: (tab: string) => void;
   onOpenAuth: () => void;
   onOpenNotifications: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -43,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectTab,
   onOpenAuth,
   onOpenNotifications,
+  onOpenProfile,
 }) => {
   const { user, logout, quickLoginDemoRole, unreadNotifsCount } = useAuth();
   const { themeMode, setThemeMode, effectiveTheme } = useTheme();
@@ -102,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'dispatches', label: t('nav.dispatches', 'Dispatches'), icon: Truck, show: true },
     { id: 'locations', label: t('nav.locations', 'Origins & Docks'), icon: Warehouse, show: !!user && user.role !== 'RECEIVER' },
     { id: 'partners', label: t('nav.partners', 'Partners'), icon: Users, show: !!user && user.role !== 'RECEIVER' },
-    { id: 'recommendations', label: 'Recommendations', icon: Sparkles, show: true },
+    { id: 'recommendations', label: t('nav.recommendations', 'Recommendations'), icon: Sparkles, show: true },
     { id: 'audit', label: t('nav.audit', 'Audit Trail'), icon: FileText, show: !!user && (user.role === 'SUPER_ADMIN' || user.role === 'BUSINESS_OWNER') },
     { id: 'status', label: t('nav.status', 'System Status'), icon: Shield, show: true },
   ];
@@ -280,7 +282,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {!isOnline ? (
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-950/80 text-amber-300 border border-amber-800 text-[11px] font-semibold">
                   <WifiOff className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Offline {queueCount > 0 ? `(${queueCount} queued)` : ''}</span>
+                  <span>{t('nav.offline', 'Offline ({count} queued)', { count: queueCount })}</span>
                 </div>
               ) : queueCount > 0 ? (
                 <button
@@ -289,7 +291,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="Click to sync queued actions with server"
                 >
                   <RefreshCw className="w-3 h-3 text-teal-400 animate-spin" />
-                  <span>Sync ({queueCount})</span>
+                  <span>{t('nav.sync', 'Sync ({count})', { count: queueCount })}</span>
                 </button>
               ) : null}
 
@@ -366,12 +368,28 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {user ? (
               <div className="flex items-center gap-1.5 xl:gap-2 pl-2 border-l border-slate-800">
-                <div className="text-right hidden sm:block">
-                  <div className="text-xs font-semibold text-slate-200 truncate max-w-[85px] xl:max-w-[130px]">{user.name}</div>
-                  <div className="flex items-center justify-end gap-1 mt-0.5">
-                    {getRoleBadge(user.role)}
+                <button
+                  onClick={onOpenProfile}
+                  className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-800/80 transition-colors cursor-pointer group text-left"
+                  title="View / Edit Profile"
+                  aria-label="View or edit profile"
+                >
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-bold text-indigo-400">
+                        {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
                   </div>
-                </div>
+                  <div className="text-left hidden sm:block">
+                    <div className="text-xs font-semibold text-slate-200 group-hover:text-indigo-300 transition-colors truncate max-w-[85px] xl:max-w-[130px]">{user.name}</div>
+                    <div className="flex items-center justify-start gap-1 mt-0.5">
+                      {getRoleBadge(user.role)}
+                    </div>
+                  </div>
+                </button>
                 <button
                   onClick={logout}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 transition-colors cursor-pointer min-w-[34px] min-h-[34px] flex items-center justify-center"
@@ -428,7 +446,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Tablet First-Class Navigation Strip (Covers Tablet Portrait & Landscape: 768px - 1279px) */}
-      <div className="hidden md:flex xl:hidden border-t border-slate-800/80 bg-slate-900/95 px-3 sm:px-6 py-2 items-center justify-between gap-1 overflow-x-auto scrollbar-none w-full shadow-inner">
+      <div className="hidden md:flex xl:hidden border-t border-slate-800/80 bg-slate-900/95 px-2.5 sm:px-4 py-1.5 items-center gap-1.5 overflow-x-auto scrollbar-thin w-full shadow-inner">
         {navItems.filter((i) => i.show).map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -436,13 +454,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               key={item.id}
               onClick={() => onSelectTab(item.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer min-h-[44px] shrink-0 ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-all cursor-pointer min-h-[38px] shrink-0 ${
                 isActive
                   ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
               }`}
             >
-              <Icon className="w-4 h-4 shrink-0 text-sky-400" />
+              <Icon className="w-3.5 h-3.5 shrink-0 text-sky-400" />
               <span>{item.label}</span>
             </button>
           );
@@ -475,17 +493,34 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {user ? (
             <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/80 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold text-white">{user.name}</div>
-                <div className="text-xs text-slate-400">{user.businessName}</div>
-                <div className="mt-1">{getRoleBadge(user.role)}</div>
-              </div>
+              <button
+                onClick={() => {
+                  onOpenProfile?.();
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-2.5 text-left cursor-pointer group flex-1 mr-2"
+              >
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-700 border border-slate-600 flex items-center justify-center shrink-0">
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-bold text-indigo-400">
+                      {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">{user.name}</div>
+                  <div className="text-xs text-slate-400">{user.businessName}</div>
+                  <div className="mt-1">{getRoleBadge(user.role)}</div>
+                </div>
+              </button>
               <button
                 onClick={() => {
                   logout();
                   setMobileMenuOpen(false);
                 }}
-                className="p-2 rounded-lg bg-slate-700 text-rose-300 hover:bg-slate-600"
+                className="p-2 rounded-lg bg-slate-700 text-rose-300 hover:bg-slate-600 shrink-0"
                 aria-label="Sign Out"
               >
                 <LogOut className="w-4 h-4" />

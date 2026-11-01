@@ -16,12 +16,14 @@ import { Dispatch } from '../../types/dispatch.js';
 import { api } from '../../services/api.js';
 import { StatusBadge } from '../../components/common/StatusBadge.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
+import { ProfileSummaryCard } from '../../components/common/ProfileSummaryCard.js';
 
 interface ReceiverDashboardProps {
   onSelectDispatch: (id: string) => void;
+  onOpenProfile?: () => void;
 }
 
-export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDispatch }) => {
+export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDispatch, onOpenProfile }) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [inboundDispatches, setInboundDispatches] = useState<Dispatch[]>([]);
@@ -50,6 +52,9 @@ export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDi
 
   return (
     <div className="space-y-6">
+      {/* Profile Summary Card */}
+      <ProfileSummaryCard onOpenProfile={onOpenProfile} />
+
       {/* Receiving Portal Header */}
       <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm">
         <div className="flex items-center gap-2 mb-1">
@@ -69,17 +74,17 @@ export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDi
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-white flex items-center gap-2">
             <ClipboardCheck className="w-4 h-4 text-amber-400" />
-            Deliveries Awaiting Verification ({pendingVerification.length})
+            {t('recon.active_cases', 'Deliveries Awaiting Verification ({count})', { count: pendingVerification.length })}
           </h2>
-          <span className="text-xs text-slate-400">Inspect physical goods on dock</span>
+          <span className="text-xs text-slate-400">{t('recon.record_receipt')}</span>
         </div>
 
         {pendingVerification.length === 0 ? (
           <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center">
             <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-            <h3 className="text-sm font-semibold text-white">All Deliveries Verified</h3>
+            <h3 className="text-sm font-semibold text-white">{t('empty.all_verified', 'All Deliveries Verified')}</h3>
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-              There are no pending inbound deliveries requiring dock inspection at this time.
+              {t('empty.no_deliveries_pending', 'There are no pending inbound deliveries requiring dock inspection at this time.')}
             </p>
           </div>
         ) : (
@@ -96,7 +101,7 @@ export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDi
 
                 <div className="space-y-1.5 text-xs text-slate-300 mb-4">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Shipper / Supplier:</span>
+                    <span className="text-slate-500">{t('table.sender_supplier')}:</span>
                     <span className="font-semibold text-slate-200">{d.senderBusinessName}</span>
                   </div>
                   <div className="flex justify-between">
@@ -104,8 +109,8 @@ export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDi
                     <span>{d.driverName || 'Not specified'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Manifest Contents:</span>
-                    <span>{d.lines.length} lines ({d.totalQuantityDispatched} units)</span>
+                    <span className="text-slate-500">{t('table.items')}:</span>
+                    <span>{d.lines.length} lines ({d.totalQuantityDispatched} {t('unit.units')})</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Sent Date:</span>
@@ -118,7 +123,7 @@ export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDi
                   className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-amber-600/20"
                 >
                   <PackageCheck className="w-4 h-4" />
-                  <span>Verify Items & Record Receipt</span>
+                  <span>{t('recon.record_receipt', 'Verify Items & Record Receipt')}</span>
                   <ChevronRight className="w-4 h-4 ml-auto" />
                 </button>
               </div>
@@ -131,11 +136,11 @@ export const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ onSelectDi
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
         <h2 className="text-sm font-bold text-white flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          Completed Receipt Archive
+          {t('status.reconciled', 'Completed Receipt Archive')}
         </h2>
 
         <div className="overflow-x-auto rounded-xl border border-slate-800/80 scrollbar-thin">
-          <table className="w-full text-left text-xs min-w-[580px] md:min-w-full">
+          <table className="w-full text-left text-xs min-w-[640px] lg:min-w-full">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/40 border-b border-slate-800">
               <tr>
                 <th className="px-2 sm:px-3.5 py-3 font-semibold whitespace-nowrap">Dispatch #</th>

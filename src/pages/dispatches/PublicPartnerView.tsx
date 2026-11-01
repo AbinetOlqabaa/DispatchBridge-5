@@ -14,6 +14,7 @@ import {
   Package,
   Camera,
   PenTool,
+  Globe,
 } from 'lucide-react';
 import { CargoEvidence, DiscrepancyType, Dispatch, ItemCondition } from '../../types/dispatch.js';
 import { api } from '../../services/api.js';
@@ -21,6 +22,7 @@ import { StatusBadge } from '../../components/common/StatusBadge.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 import { SignaturePad } from '../../components/dispatches/SignaturePad.js';
 import { DamagePhotoUpload } from '../../components/dispatches/DamagePhotoUpload.js';
+import { useTranslation } from '../../context/LanguageContext.js';
 
 interface PublicPartnerViewProps {
   shareToken: string;
@@ -28,6 +30,7 @@ interface PublicPartnerViewProps {
 }
 
 export const PublicPartnerView: React.FC<PublicPartnerViewProps> = ({ shareToken, onExit }) => {
+  const { t, language, setLanguage, languages } = useTranslation();
   const [dispatch, setDispatch] = useState<Dispatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,32 +174,48 @@ export const PublicPartnerView: React.FC<PublicPartnerViewProps> = ({ shareToken
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 px-4 py-6">
-      {/* Top Banner */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      {/* Top Banner with Language Selector */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
             <Boxes className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-xs font-bold text-white">DispatchBridge Partner Portal</div>
-            <div className="text-[10px] text-slate-400">Authenticated Delivery Slip</div>
+            <div className="text-xs font-bold text-white">{t('app.name')} • {t('app.subtitle')}</div>
+            <div className="text-[10px] text-slate-400">{t('auth.signin_subtitle')}</div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Quick Language Switcher for external partners */}
+          <div className="flex items-center bg-slate-800 border border-slate-700/80 rounded-lg p-0.5">
+            <Globe className="w-3 h-3 text-sky-400 ml-1.5 mr-1" />
+            {languages.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => setLanguage(l.code)}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                  language === l.code ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {l.shortLabel}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Print Slip</span>
+            <span className="hidden sm:inline">Print</span>
           </button>
           {onExit && (
             <button
               onClick={onExit}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs cursor-pointer"
+              className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs cursor-pointer"
             >
-              Close
+              {t('action.close')}
             </button>
           )}
         </div>
